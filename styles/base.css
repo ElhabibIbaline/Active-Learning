@@ -13,6 +13,8 @@
   --brick-bg:#f5e6e2;
   --line:#d7dbcd;
   --focus:#2f4d8f;
+  --plum:#6d4a7a;
+  --plum-bg:#ece4ee;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -28,6 +30,8 @@
     --brick-bg:#332019;
     --line:#2b3342;
     --focus:#7fa0e6;
+    --plum:#c294d1;
+    --plum-bg:#2a1f30;
   }
 }
 

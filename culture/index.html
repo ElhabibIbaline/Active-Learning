@@ -1,0 +1,425 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Culture administrative — Active Learning</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="../styles/base.css">
+<style>
+  body{padding-block:0 40px;}
+
+  .room-top{padding-block:22px 14px; border-bottom:1px solid var(--line);}
+  .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep); font-weight:600;}
+  .room-top h1{font-size:1.3rem; font-weight:600; margin-block:8px 6px;}
+  .room-top p{color:var(--ink-soft); font-size:.9rem; max-width:56ch; margin:0 0 16px;}
+
+  /* ---- ascenseur : nav des étages ---- */
+  .elevator{display:flex; gap:6px; flex-wrap:wrap;}
+  .elevator-btn{
+    display:flex; align-items:center; gap:6px; border:1.5px solid var(--line);
+    background:var(--raised); color:var(--ink-soft); border-radius:999px;
+    padding:6px 12px 6px 8px; font-size:.72rem; font-weight:600; cursor:pointer;
+    font-family:"IBM Plex Sans",sans-serif; transition:border-color .2s, color .2s, background .2s;
+  }
+  .elevator-btn .shape{width:14px; height:14px; flex:none;}
+  .elevator-btn.active{border-color:var(--acc); color:var(--acc); background:color-mix(in srgb, var(--acc) 12%, var(--raised));}
+
+  /* ---- étage ---- */
+  .floor{
+    --acc: var(--gold);
+    padding-block:64px 12px;
+    opacity:0; transform:translateY(28px);
+    transition:opacity .7s ease, transform .7s ease;
+  }
+  .floor.in-view{opacity:1; transform:translateY(0);}
+  .floor-1{--acc:var(--gold);}
+  .floor-2{--acc:var(--sage);}
+  .floor-3{--acc:var(--focus);}
+  .floor-4{--acc:var(--brick);}
+  .floor-5{--acc:var(--plum);}
+
+  .floor-tag{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  .floor-shape{width:30px; height:30px; color:var(--acc); flex:none;}
+  .floor-label{font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--acc);}
+  .floor h2{font-size:1.5rem; margin-bottom:18px;}
+
+  .floor-body{display:grid; grid-template-columns:1fr; gap:26px;}
+  @media(min-width:700px){ .floor-body{grid-template-columns:1fr 1fr; align-items:center;} }
+
+  .floor p.copy{font-size:1rem; line-height:1.75; color:var(--ink);}
+  .floor p.copy + p.copy{margin-top:12px;}
+
+  /* mot-clé animé : le surligneur qui balaie le texte à l'apparition */
+  .key{
+    background-image:linear-gradient(color-mix(in srgb, var(--acc) 35%, transparent), color-mix(in srgb, var(--acc) 35%, transparent));
+    background-repeat:no-repeat; background-size:0% 55%; background-position:0 85%;
+    transition:background-size .7s ease .15s; font-weight:600; padding:0 2px; border-radius:2px;
+  }
+  .floor.in-view .key{background-size:100% 55%;}
+
+  .stat-giant{
+    font-family:"Fraunces",serif; font-weight:900; color:var(--acc);
+    font-size:clamp(4.2rem,14vw,7rem); line-height:.85;
+  }
+  .stat-caption{font-size:.86rem; color:var(--ink-soft); margin-top:6px;}
+
+  .visual{display:flex; align-items:center; justify-content:center; min-height:150px;}
+
+  /* --- étage 1 : trois portes --- */
+  .doors3{display:flex; align-items:flex-end; gap:16px;}
+  .door3{border:2px solid var(--acc); border-bottom:none; border-radius:8px 8px 0 0; background:color-mix(in srgb, var(--acc) 10%, var(--raised)); text-align:center; padding-top:8px; font-size:.72rem; font-weight:600; color:var(--acc);}
+  .door3 span{display:block; font-family:"IBM Plex Mono",monospace; font-size:.68rem; color:var(--ink-soft); margin-top:2px;}
+
+  /* --- étage 2 : pièce --- */
+  .coin{width:104px; height:104px; margin-inline:auto; position:relative; transform-style:preserve-3d;}
+  .coin .face{
+    position:absolute; inset:0; border-radius:50%; display:flex; align-items:center; justify-content:center;
+    backface-visibility:hidden; font-family:"Fraunces",serif; font-weight:900; font-size:.95rem; text-align:center;
+    color:var(--raised); padding:8px; line-height:1.2;
+  }
+  .coin .face.front{background:var(--acc);}
+  .coin .face.back{background:color-mix(in srgb, var(--acc) 70%, var(--ink)); transform:rotateY(180deg);}
+  .coin.spin{animation:coinspin 1.4s ease-in-out 1;}
+  @keyframes coinspin{ from{transform:rotateY(0);} to{transform:rotateY(720deg);} }
+  @media (prefers-reduced-motion: reduce){ .coin.spin{animation:none;} }
+
+  /* --- étage 3 : pyramide A/B/C --- */
+  .pyramid-band{transition:filter .5s ease, opacity .5s ease; opacity:.55;}
+  .floor.in-view .pyramid-band.hi{opacity:1; filter:drop-shadow(0 0 6px color-mix(in srgb, var(--acc) 60%, transparent));}
+  .pyramid-label{font-family:"IBM Plex Mono",monospace; font-size:11px; fill:var(--raised); font-weight:700;}
+
+  /* --- étage 4 : devoirs --- */
+  .duties{display:flex; flex-direction:column; gap:14px;}
+  .duty{
+    display:flex; gap:12px; align-items:flex-start; opacity:0; transform:translateX(-14px);
+    transition:opacity .5s ease, transform .5s ease;
+  }
+  .floor.in-view .duty{opacity:1; transform:translateX(0);}
+  .duty:nth-child(1){transition-delay:.05s;}
+  .duty:nth-child(2){transition-delay:.2s;}
+  .duty:nth-child(3){transition-delay:.35s;}
+  .duty:nth-child(4){transition-delay:.5s;}
+  .duty-icon{width:34px; height:34px; flex:none; color:var(--acc);}
+  .duty h3{font-size:.95rem; font-weight:600; margin-bottom:2px;}
+  .duty p{margin:0; font-size:.86rem; color:var(--ink-soft); line-height:1.5;}
+
+  /* --- étage 5 : organigramme + balance --- */
+  .org-svg line{stroke:var(--line); stroke-width:2; stroke-dasharray:120; stroke-dashoffset:120; transition:stroke-dashoffset 1s ease;}
+  .floor.in-view .org-svg line{stroke-dashoffset:0;}
+  .org-svg line:nth-of-type(2){transition-delay:.3s;}
+  .org-svg line:nth-of-type(3){transition-delay:.3s;}
+  .org-svg rect{fill:var(--raised); stroke:var(--acc); stroke-width:1.6;}
+  .org-svg text{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--ink);}
+
+  .balance2{transform-origin:100px 40px; transition:transform 1s cubic-bezier(.34,1.4,.4,1);}
+  .floor.in-view .balance2{transform:rotate(4deg);}
+  .balance2-label{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--ink-soft);}
+
+  /* ---- tiroir à souvenirs (flashcards) ---- */
+  .memory-drawer{padding-block:60px 20px;}
+  .memory-drawer h2{font-size:1.4rem; margin-bottom:8px;}
+  .memory-drawer > p{color:var(--ink-soft); max-width:60ch; margin-bottom:22px; line-height:1.55;}
+  .recap-line{font-size:.86rem; color:var(--sage); font-weight:600; margin-bottom:18px; display:none;}
+  .recap-line.show{display:block;}
+
+  .cards-grid{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media(min-width:640px){ .cards-grid{grid-template-columns:1fr 1fr;} }
+  @media(min-width:960px){ .cards-grid{grid-template-columns:1fr 1fr 1fr;} }
+
+  .flashcard{perspective:1200px; cursor:pointer; min-height:150px;}
+  .flashcard-inner{position:relative; width:100%; height:100%; min-height:150px; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.3,.8,.3,1);}
+  .flashcard.flipped .flashcard-inner{transform:rotateY(180deg);}
+  .flashcard-face{
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; border:1.5px solid var(--line);
+    padding:16px; display:flex; flex-direction:column; justify-content:center; gap:8px; background:var(--raised);
+  }
+  .flashcard-face.back{transform:rotateY(180deg); background:var(--paper);}
+  .flashcard-face .tag{font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--ink-soft); font-weight:700;}
+  .flashcard-face .q, .flashcard-face .a{font-size:.92rem; line-height:1.45;}
+  .flashcard-face .a{font-weight:600;}
+  .rate-row{display:flex; gap:8px; margin-top:6px;}
+  .rate-btn{
+    flex:1; font-size:.74rem; font-weight:600; border-radius:7px; padding:7px 8px; cursor:pointer;
+    border:1.5px solid var(--line); background:var(--raised); color:var(--ink-soft);
+  }
+  .rate-btn.known{border-color:var(--sage); color:var(--sage);}
+  .rate-btn.review{border-color:var(--brick); color:var(--brick);}
+  .flashcard.state-known .flashcard-face{border-color:var(--sage);}
+  .flashcard.state-review .flashcard-face{border-color:var(--brick);}
+
+  footer.note{color:var(--ink-soft); font-size:.76rem; text-align:center; padding-block:18px 4px;}
+</style>
+</head>
+<body>
+
+<header class="app-nav">
+  <div class="wrap row">
+    <a class="brand" href="../index.html"><span class="dot"></span> Active Learning</a>
+    <a class="crumb" href="../index.html">← Accueil</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <header class="room-top">
+    <div class="eyebrow">Module 03 · Immeuble administratif</div>
+    <h1>L'Immeuble de la Culture Administrative</h1>
+    <p>Cinq étages, chacun avec sa couleur et sa forme. Scrolle pour les visiter : les mots à retenir se surlignent tout seuls quand tu arrives dessus.</p>
+    <nav class="elevator" id="elevator" aria-label="Étages de l'immeuble">
+      <button class="elevator-btn" data-floor="1" onclick="goFloor(1)"><svg class="shape" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="var(--gold)"/></svg>Le concours</button>
+      <button class="elevator-btn" data-floor="2" onclick="goFloor(2)"><svg class="shape" viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="16" rx="3" fill="var(--sage)"/></svg>La DGFiP</button>
+      <button class="elevator-btn" data-floor="3" onclick="goFloor(3)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,2 18,18 2,18" fill="var(--focus)"/></svg>Le statut</button>
+      <button class="elevator-btn" data-floor="4" onclick="goFloor(4)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" fill="var(--brick)"/></svg>Les devoirs</button>
+      <button class="elevator-btn" data-floor="5" onclick="goFloor(5)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,1 19,10 10,19 1,10" fill="var(--plum)"/></svg>L'organisation</button>
+    </nav>
+  </header>
+
+  <!-- ÉTAGE 1 : LE CONCOURS -->
+  <section class="floor floor-1" id="floor-1" data-floor="1">
+    <div class="floor-tag">
+      <svg class="floor-shape" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8.5" fill="var(--acc)"/></svg>
+      <span class="floor-label">Rez-de-chaussée</span>
+    </div>
+    <h2>Le concours</h2>
+    <div class="floor-body">
+      <div>
+        <div class="stat-giant">3</div>
+        <div class="stat-caption">étapes, une seule voie d'accès</div>
+        <p class="copy" style="margin-top:18px">La <span class="key">pré-admissibilité</span> est un <span class="key">QCM</span> de culture générale et de raisonnement. Réussie, elle ouvre l'<span class="key">admissibilité</span> : un <span class="key">cas pratique</span> noté sur dossier. Vient enfin l'<span class="key">admission</span> : un <span class="key">entretien oral</span> devant un jury.</p>
+      </div>
+      <div class="visual">
+        <div class="doors3">
+          <div class="door3" style="width:60px;height:60px;">Porte 1<span>QCM</span></div>
+          <div class="door3" style="width:74px;height:86px;">Porte 2<span>Cas pratique</span></div>
+          <div class="door3" style="width:88px;height:114px;">Porte 3<span>Entretien</span></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAGE 2 : LA DGFiP -->
+  <section class="floor floor-2" id="floor-2" data-floor="2">
+    <div class="floor-tag">
+      <svg class="floor-shape" viewBox="0 0 20 20"><rect x="1.5" y="1.5" width="17" height="17" rx="3" fill="var(--acc)"/></svg>
+      <span class="floor-label">1er étage</span>
+    </div>
+    <h2>La DGFiP</h2>
+    <div class="floor-body">
+      <div class="visual">
+        <div class="coin" id="coin">
+          <div class="face front">Impôt</div>
+          <div class="face back">Dépense</div>
+        </div>
+      </div>
+      <div>
+        <p class="copy">La DGFiP dépend du <span class="key">ministère de l'Économie et des Finances</span>. Sa mission tient sur une pièce à deux faces : <span class="key">collecter l'impôt</span> d'un côté, <span class="key">payer les dépenses publiques</span> de l'autre.</p>
+        <p class="copy">Elle tient aussi le <span class="key">cadastre</span>, le registre de toutes les propriétés foncières du territoire.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAGE 3 : LE STATUT -->
+  <section class="floor floor-3" id="floor-3" data-floor="3">
+    <div class="floor-tag">
+      <svg class="floor-shape" viewBox="0 0 20 20"><polygon points="10,1.5 18.5,18 1.5,18" fill="var(--acc)"/></svg>
+      <span class="floor-label">2e étage</span>
+    </div>
+    <h2>Le statut d'agent</h2>
+    <div class="floor-body">
+      <div>
+        <p class="copy">Catégorie <b>A</b> conçoit et dirige. Catégorie <b>B</b> encadre. Catégorie <span class="key">C exécute</span> — c'est la base la plus nombreuse de la fonction publique, et celle de ce concours.</p>
+        <p class="copy">Diplôme requis : le <span class="key">brevet des collèges (DNB)</span> ou un niveau équivalent — une voie sans condition de diplôme existe aussi. Un agent <span class="key">titulaire</span> a réussi un concours ; un <span class="key">contractuel</span> est recruté sur contrat, sans ce concours.</p>
+      </div>
+      <div class="visual">
+        <svg width="180" height="150" viewBox="0 0 180 150">
+          <polygon class="pyramid-band" points="70,10 110,10 100,50 80,50" fill="color-mix(in srgb, var(--acc) 25%, var(--raised))" stroke="var(--acc)"/>
+          <text x="90" y="34" text-anchor="middle" class="pyramid-label" fill="var(--ink)">A</text>
+          <polygon class="pyramid-band" points="80,50 100,50 115,95 65,95" fill="color-mix(in srgb, var(--acc) 40%, var(--raised))" stroke="var(--acc)"/>
+          <text x="90" y="76" text-anchor="middle" class="pyramid-label" fill="var(--ink)">B</text>
+          <polygon class="pyramid-band hi" points="65,95 115,95 132,140 48,140" fill="var(--acc)" stroke="var(--acc)"/>
+          <text x="90" y="122" text-anchor="middle" class="pyramid-label">C</text>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAGE 4 : LES DEVOIRS -->
+  <section class="floor floor-4" id="floor-4" data-floor="4">
+    <div class="floor-tag">
+      <svg class="floor-shape" viewBox="0 0 20 20"><polygon points="10,1 18.5,5.5 18.5,14.5 10,19 1.5,14.5 1.5,5.5" fill="var(--acc)"/></svg>
+      <span class="floor-label">3e étage</span>
+    </div>
+    <h2>Les devoirs de l'agent</h2>
+    <div class="floor-body" style="grid-template-columns:1fr;">
+      <div class="duties">
+        <div class="duty">
+          <svg class="duty-icon" viewBox="0 0 34 34" fill="none"><ellipse cx="17" cy="18" rx="12" ry="9" stroke="currentColor" stroke-width="1.8"/><path d="M8 15c3-3 15-3 18 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17" r="1.4" fill="currentColor"/><circle cx="22" cy="17" r="1.4" fill="currentColor"/></svg>
+          <div><h3><span class="key">Neutralité</span></h3><p>Ne pas manifester ses opinions politiques ou religieuses dans l'exercice de ses fonctions — comme un caméléon qui ne prend jamais parti.</p></div>
+        </div>
+        <div class="duty">
+          <svg class="duty-icon" viewBox="0 0 34 34" fill="none"><rect x="9" y="15" width="16" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M12 15v-4a5 5 0 0 1 10 0v4" stroke="currentColor" stroke-width="1.8"/><circle cx="17" cy="21" r="1.6" fill="currentColor"/></svg>
+          <div><h3><span class="key">Discrétion professionnelle</span></h3><p>Ne pas divulguer les informations connues dans le cadre du travail — un cadenas sur ce qu'on apprend au bureau.</p></div>
+        </div>
+        <div class="duty">
+          <svg class="duty-icon" viewBox="0 0 34 34" fill="none"><path d="M6 24c4-10 8-14 11-14s7 4 11 14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" fill="none"/><line x1="4" y1="27" x2="30" y2="27" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          <div><h3><span class="key">Obligation de réserve</span></h3><p>Garder une expression mesurée de ses opinions, même en dehors du service — le mégaphone reste au volume bas.</p></div>
+        </div>
+        <div class="duty">
+          <svg class="duty-icon" viewBox="0 0 34 34" fill="none"><line x1="17" y1="6" x2="17" y2="26" stroke="currentColor" stroke-width="1.8"/><line x1="7" y1="12" x2="27" y2="12" stroke="currentColor" stroke-width="1.8"/><path d="M7 12l-4 8h8l-4-8z" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M27 12l-4 8h8l-4-8z" stroke="currentColor" stroke-width="1.6" fill="none"/></svg>
+          <div><h3><span class="key">Probité</span></h3><p>Agir avec intégrité, sans se laisser influencer par un intérêt personnel — la balance reste à l'équilibre.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ÉTAGE 5 : L'ORGANISATION -->
+  <section class="floor floor-5" id="floor-5" data-floor="5">
+    <div class="floor-tag">
+      <svg class="floor-shape" viewBox="0 0 20 20"><polygon points="10,1 19,10 10,19 1,10" fill="var(--acc)"/></svg>
+      <span class="floor-label">Terrasse</span>
+    </div>
+    <h2>L'organisation</h2>
+    <div class="floor-body">
+      <div>
+        <p class="copy">Une même personne ne peut pas à la fois décider une dépense (l'<span class="key">ordonnateur</span>) et manier les fonds (le <span class="key">comptable public</span>) : deux mains différentes tiennent chacune un côté de la balance.</p>
+        <p class="copy">L'État s'organise du <span class="key">ministère</span> jusqu'aux <span class="key">DDFiP / DRFiP</span>, les services déconcentrés où travaillent la plupart des agents de catégorie C.</p>
+      </div>
+      <div class="visual" style="flex-direction:column; gap:22px;">
+        <svg width="170" height="70" viewBox="0 0 170 70" class="org-svg">
+          <rect x="55" y="4" width="60" height="20" rx="3"/><text x="85" y="17" text-anchor="middle">Ministère</text>
+          <line x1="85" y1="24" x2="30" y2="42"/>
+          <line x1="85" y1="24" x2="140" y2="42"/>
+          <rect x="2" y="42" width="56" height="20" rx="3"/><text x="30" y="55" text-anchor="middle">DRFiP</text>
+          <rect x="112" y="42" width="56" height="20" rx="3"/><text x="140" y="55" text-anchor="middle">DDFiP</text>
+        </svg>
+        <svg width="200" height="90" viewBox="0 0 200 90">
+          <line x1="100" y1="40" x2="100" y2="80" stroke="var(--line)" stroke-width="4"/>
+          <polygon points="90,80 110,80 100,68" fill="var(--line)"/>
+          <g class="balance2">
+            <line x1="20" y1="40" x2="180" y2="40" stroke="var(--ink-soft)" stroke-width="3"/>
+            <line x1="20" y1="40" x2="20" y2="58" stroke="var(--ink-soft)" stroke-width="2"/>
+            <rect x="4" y="58" width="32" height="10" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="20" y="65" text-anchor="middle" class="balance2-label">Ordonnateur</text>
+            <line x1="180" y1="40" x2="180" y2="58" stroke="var(--ink-soft)" stroke-width="2"/>
+            <rect x="154" y="58" width="42" height="10" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+            <text x="175" y="65" text-anchor="middle" class="balance2-label">Comptable</text>
+          </g>
+        </svg>
+      </div>
+    </div>
+  </section>
+
+  <!-- TIROIR À SOUVENIRS -->
+  <section class="memory-drawer">
+    <h2>Le tiroir à souvenirs</h2>
+    <p>Retourne chaque carte, réponds mentalement avant de voir la solution, puis évalue-toi honnêtement — c'est ce qui fait tenir l'information dans la durée.</p>
+    <div class="recap-line" id="recap-line"></div>
+    <div class="cards-grid" id="cards-grid"></div>
+  </section>
+
+  <footer class="note">Active Learning — module culture administrative.</footer>
+</div>
+
+<script src="../js/effects.js"></script>
+<script>
+(function(){
+  // --- révélation au scroll ---
+  var floors = document.querySelectorAll('.floor');
+  var revealObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){ if(e.isIntersecting) e.target.classList.add('in-view'); });
+  }, {threshold:0.3});
+  floors.forEach(function(f){ revealObserver.observe(f); });
+
+  // --- ascenseur : met en évidence l'étage courant ---
+  var navBtns = document.querySelectorAll('.elevator-btn');
+  var spyObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){
+        var n = e.target.getAttribute('data-floor');
+        navBtns.forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-floor') === n); });
+      }
+    });
+  }, {rootMargin:'-45% 0px -45% 0px', threshold:0});
+  floors.forEach(function(f){ spyObserver.observe(f); });
+
+  window.goFloor = function(n){
+    var el = document.getElementById('floor-' + n);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  // --- pièce qui tourne au 1er étage ---
+  var coin = document.getElementById('coin');
+  var coinObserver = new IntersectionObserver(function(entries){
+    entries.forEach(function(e){
+      if(e.isIntersecting){ coin.classList.add('spin'); coinObserver.disconnect(); }
+    });
+  }, {threshold:0.5});
+  coinObserver.observe(coin);
+
+  // --- tiroir à souvenirs : flashcards ---
+  var STATE_KEY = 'active-learning-culture-v1';
+  function loadState(){ try{ var raw = localStorage.getItem(STATE_KEY); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+  function saveState(s){ try{ localStorage.setItem(STATE_KEY, JSON.stringify(s)); }catch(e){} }
+  var state = loadState();
+
+  var CARDS = [
+    {id:'c1', tag:'Le concours', q:"Combien d'étapes comporte le concours ?", a:"Trois : pré-admissibilité (QCM), admissibilité (cas pratique), admission (entretien)."},
+    {id:'c2', tag:'La DGFiP', q:"De quel ministère dépend la DGFiP ?", a:"Le ministère de l'Économie et des Finances."},
+    {id:'c3', tag:'Le statut', q:"Quel diplôme minimum pour ce concours ?", a:"Le brevet des collèges (DNB) ou un niveau équivalent."},
+    {id:'c4', tag:'Les devoirs', q:"Que veut dire « neutralité » pour un agent public ?", a:"Ne pas exprimer ses opinions politiques ou religieuses dans l'exercice de ses fonctions."},
+    {id:'c5', tag:"L'organisation", q:"Pourquoi sépare-t-on ordonnateur et comptable public ?", a:"Pour qu'une même personne ne décide pas ET ne paie pas seule une dépense — un contrôle mutuel."},
+    {id:'c6', tag:"L'organisation", q:"Où travaille la plupart des agents de catégorie C ?", a:"Dans les services déconcentrés : les DDFiP et DRFiP."}
+  ];
+
+  var grid = document.getElementById('cards-grid');
+  CARDS.forEach(function(c){
+    var card = document.createElement('div');
+    card.className = 'flashcard';
+    card.id = 'card-' + c.id;
+    card.innerHTML =
+      '<div class="flashcard-inner">' +
+        '<div class="flashcard-face front"><span class="tag">' + c.tag + '</span><span class="q">' + c.q + '</span></div>' +
+        '<div class="flashcard-face back"><span class="tag">Réponse</span><span class="a">' + c.a + '</span>' +
+          '<div class="rate-row" data-noflip>' +
+            '<button class="rate-btn known" data-noflip onclick="rateCard(event,\'' + c.id + '\',true)">Je savais</button>' +
+            '<button class="rate-btn review" data-noflip onclick="rateCard(event,\'' + c.id + '\',false)">À revoir</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    card.addEventListener('click', function(ev){
+      if(ev.target.closest('[data-noflip]')) return;
+      card.classList.toggle('flipped');
+    });
+    grid.appendChild(card);
+    applyCardState(c.id);
+  });
+
+  function applyCardState(id){
+    var card = document.getElementById('card-' + id);
+    card.classList.remove('state-known', 'state-review');
+    if(state[id] === 'known') card.classList.add('state-known');
+    if(state[id] === 'review') card.classList.add('state-review');
+  }
+  function updateRecap(){
+    var known = CARDS.filter(function(c){ return state[c.id] === 'known'; }).length;
+    var el = document.getElementById('recap-line');
+    if(known > 0){
+      el.textContent = known + ' / ' + CARDS.length + ' cartes déjà sues.';
+      el.classList.add('show');
+    }
+  }
+  window.rateCard = function(ev, id, known){
+    state[id] = known ? 'known' : 'review';
+    saveState(state);
+    applyCardState(id);
+    updateRecap();
+    if(known){
+      var rect = ev.target.getBoundingClientRect();
+      AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);
+    }
+  };
+  updateRecap();
+})();
+</script>
+</body>
+</html>

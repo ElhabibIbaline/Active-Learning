@@ -482,6 +482,7 @@
   <footer class="note">Active Learning — module raisonnement logique.</footer>
 </div>
 
+<script src="../js/effects.js"></script>
 <script>
 (function(){
   var STATE_KEY = 'active-learning-raisonnement-v1';
@@ -503,6 +504,7 @@
     saveState(state);
     renderDoors();
     renderWeakList();
+    if(window.AL) AL.markActiveDay();
   }
 
   function renderDoors(){

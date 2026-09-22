@@ -550,6 +550,7 @@
     saveState(state);
     renderDoors();
     renderWeakList();
+    AL.markActiveDay();
   }
   function renderDoors(){
     document.querySelectorAll('.door-dot').forEach(function(dot){

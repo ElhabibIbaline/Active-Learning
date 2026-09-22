@@ -260,6 +260,7 @@
     saveVocab(vocabState);
     applyVocabState(id);
     updateVocabRecap();
+    AL.markActiveDay();
     if(known){
       var rect = ev.target.getBoundingClientRect();
       AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);
@@ -319,6 +320,11 @@
     }
   ];
 
+  var ORTHO_KEY = 'active-learning-ortho-v1';
+  function loadOrtho(){ try{ var raw = localStorage.getItem(ORTHO_KEY); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+  function saveOrtho(s){ try{ localStorage.setItem(ORTHO_KEY, JSON.stringify(s)); }catch(e){} }
+  var orthoState = loadOrtho();
+
   var piegesList = document.getElementById('pieges-list');
   PIEGES.forEach(function(p){
     var wrap = document.createElement('div');
@@ -355,6 +361,9 @@
     reveal.classList.add('show');
     status.textContent = ok ? 'Exact' : 'À revoir';
     status.className = 'piege-status ' + (ok ? 'ok' : 'ko');
+    orthoState[id] = ok ? 'known' : 'review';
+    saveOrtho(orthoState);
+    AL.markActiveDay();
     if(ok){
       var rect = ev.target.getBoundingClientRect();
       AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);

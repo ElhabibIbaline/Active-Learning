@@ -44,3 +44,45 @@ AL.countUp = function(el, to, duration){
   requestAnimationFrame(step);
   setTimeout(finish, duration + 120);
 };
+
+// ---- série de jours consécutifs, partagée par tous les modules ----
+var STREAK_KEY = 'active-learning-days-v1';
+function isoDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+// À appeler depuis un module dès qu'un exercice est corrigé (juste ou faux) :
+// marque la journée comme active, une seule fois par jour.
+AL.markActiveDay = function(){
+  try{
+    var raw = localStorage.getItem(STREAK_KEY);
+    var days = raw ? JSON.parse(raw) : [];
+    var today = isoDate(new Date());
+    if(days.indexOf(today) === -1){
+      days.push(today);
+      localStorage.setItem(STREAK_KEY, JSON.stringify(days));
+    }
+  }catch(e){}
+};
+
+// Nombre de jours consécutifs jusqu'à aujourd'hui (ou hier, pour ne pas
+// casser la série avant la fin de la journée en cours).
+AL.getStreak = function(){
+  try{
+    var raw = localStorage.getItem(STREAK_KEY);
+    var days = raw ? JSON.parse(raw) : [];
+    var set = {};
+    days.forEach(function(d){ set[d] = true; });
+    var cursor = new Date();
+    cursor.setHours(0,0,0,0);
+    if(!set[isoDate(cursor)]){
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    var streak = 0;
+    while(set[isoDate(cursor)]){
+      streak++;
+      cursor.setDate(cursor.getDate() - 1);
+    }
+    return streak;
+  }catch(e){ return 0; }
+};

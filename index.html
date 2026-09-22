@@ -68,6 +68,45 @@
   .module.soon .status{color:var(--ink-soft);}
 
   footer.note{color:var(--ink-soft); font-size:.78rem; text-align:center; padding-block:24px;}
+
+  /* ---- tableau de bord ---- */
+  .dashboard{background:var(--raised); border:1px solid var(--line); border-radius:16px; padding:26px;}
+  .dash-top{display:flex; gap:32px; flex-wrap:wrap; align-items:center; margin-bottom:22px;}
+
+  .ring-wrap{position:relative; width:132px; height:132px; flex:none;}
+  .ring{width:132px; height:132px; transform:rotate(-90deg);}
+  .ring-track{fill:none; stroke:var(--line); stroke-width:10;}
+  .ring-fill{fill:none; stroke:var(--gold); stroke-width:10; stroke-linecap:round; stroke-dasharray:326.7; stroke-dashoffset:326.7; transition:stroke-dashoffset 1s cubic-bezier(.3,.9,.3,1);}
+  .ring-center{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center;}
+  .ring-value{font-family:"Fraunces",serif; font-weight:900; font-size:1.9rem; color:var(--ink); line-height:1;}
+  .ring-total{font-size:.74rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+
+  .dash-stats{flex:1; min-width:220px; display:flex; flex-direction:column; gap:14px;}
+  .streak-line{display:flex; align-items:center; gap:8px; font-size:.9rem; color:var(--ink);}
+  .streak-line svg{color:var(--gold); flex:none;}
+  .streak-line b{font-family:"Fraunces",serif; font-size:1.15rem;}
+
+  .module-bars{display:flex; flex-direction:column; gap:9px;}
+  .bar-row{display:flex; align-items:center; gap:10px; text-decoration:none; color:inherit;}
+  .bar-row .bar-label{font-size:.8rem; width:150px; flex:none; color:var(--ink-soft);}
+  .bar-row:hover .bar-label{color:var(--gold-deep);}
+  .bar-track{flex:1; height:8px; background:var(--paper); border-radius:99px; overflow:hidden;}
+  .bar-fill{height:100%; background:var(--gold); border-radius:99px; transition:width .8s cubic-bezier(.3,.9,.3,1); width:0%;}
+  .bar-row .bar-frac{font-size:.76rem; font-family:"IBM Plex Mono",monospace; color:var(--ink-soft); width:3.5ch; text-align:right; flex:none;}
+
+  .priority-block{border-top:1px dashed var(--line); padding-top:18px;}
+  .priority-block h3{font-size:.95rem; margin-bottom:10px;}
+  .priority-list{display:flex; flex-direction:column; gap:7px;}
+  .priority-item{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    background:var(--paper); border:1px solid var(--line); border-radius:8px;
+    padding:8px 12px; font-size:.84rem; text-decoration:none; color:var(--ink);
+  }
+  .priority-item:hover{border-color:var(--brick);}
+  .priority-item .mod-tag{font-size:.68rem; text-transform:uppercase; letter-spacing:.05em; color:var(--brick); font-weight:700; flex:none;}
+  .priority-item .go-arrow{color:var(--ink-soft); flex:none;}
+  .dash-empty, .dash-done{font-size:.86rem; color:var(--ink-soft); line-height:1.5;}
+  .dash-done{color:var(--sage); font-weight:600;}
 </style>
 </head>
 <body>
@@ -88,6 +127,34 @@
     <div class="hero-actions">
       <a class="btn btn-primary" href="raisonnement/index.html">Commencer par le raisonnement logique →</a>
       <a class="btn btn-ghost" href="#demo">Voir la différence</a>
+    </div>
+  </section>
+
+  <section class="dashboard" id="dashboard">
+    <h2>Ton tableau de bord</h2>
+    <p class="lead">Ce que tu as déjà pratiqué dans les 4 modules, au même endroit.</p>
+    <div class="dash-top">
+      <div class="ring-wrap">
+        <svg class="ring" viewBox="0 0 120 120">
+          <circle class="ring-track" cx="60" cy="60" r="52"></circle>
+          <circle class="ring-fill" id="ring-fill" cx="60" cy="60" r="52"></circle>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-value" id="ring-value">0</div>
+          <div class="ring-total" id="ring-total">/ 0 maîtrisés</div>
+        </div>
+      </div>
+      <div class="dash-stats">
+        <div class="streak-line">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><path d="M10 1c1 4-4 5-4 9a4 4 0 0 0 8 0c0-1.5-1-2-1-2 .5 3-1.5 4-1.5 4 1-2-1.5-3-1.5-6z" fill="currentColor"/></svg>
+          <span><b id="streak-value">0</b> jour(s) de suite</span>
+        </div>
+        <div class="module-bars" id="module-bars"></div>
+      </div>
+    </div>
+    <div class="priority-block">
+      <h3>À reprendre en priorité</h3>
+      <div class="priority-list" id="priority-list"></div>
     </div>
   </section>
 
@@ -131,7 +198,7 @@
 
   <section>
     <h2>Choisis ton module</h2>
-    <p class="lead">L'app se construit brique par brique. Un seul module est prêt pour l'instant — les autres arrivent au fil des prochaines séances.</p>
+    <p class="lead">Quatre modules déjà prêts. L'app continue de s'enrichir brique par brique, séance après séance.</p>
     <div class="modules">
       <a class="module card ready" href="raisonnement/index.html">
         <span class="m-num">01</span>
@@ -164,6 +231,7 @@
 
 <footer class="note">Active Learning — construit brique par brique, session après session.</footer>
 
+<script src="js/effects.js"></script>
 <script>
   function showTab(name){
     document.getElementById('tab-classique').classList.toggle('active', name === 'classique');
@@ -180,6 +248,90 @@
     verdict.textContent = ok ? 'Exact — 186 dossiers.' : 'Pas tout à fait. Regarde le détail ci-dessous.';
     document.getElementById('demo-steps').classList.add('show');
   }
+
+  (function buildDashboard(){
+    function safeGet(key){
+      try{ var raw = localStorage.getItem(key); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; }
+    }
+
+    var MODULES = [
+      {
+        key:'active-learning-raisonnement-v1', name:'Raisonnement', href:'raisonnement/index.html',
+        ids:[1,2,3,4,5,6,7], okValue:'mastered', anchor:function(id){ return 'room-' + id; },
+        labels:{1:'Suites nombres',2:'Suites lettres',3:'Dominos',4:'Matrices',5:'% et proportions',6:'Syllogismes',7:'Codes & combinatoire'}
+      },
+      {
+        key:'active-learning-calcul-v1', name:'Calcul', href:'calcul/index.html',
+        ids:[1,2,3,4,5,6,7], okValue:'mastered', anchor:function(id){ return 'room-' + id; },
+        labels:{1:'Priorités',2:'% successifs',3:'Règle de 3',4:'Conversions',5:'Périmètres',6:'Vitesse',7:'Fractions & PGCD'}
+      },
+      {
+        key:'active-learning-culture-v1', name:'Culture admin.', href:'culture/index.html',
+        ids:['c1','c2','c3','c4','c5','c6','c7','c8'], okValue:'known', anchor:function(id){ return 'card-' + id; },
+        labels:{c1:'Le concours',c2:'La DGFiP',c3:'Le statut',c4:'La neutralité',c5:'Ordonnateur/comptable',c6:'Les DDFiP/DRFiP',c7:'La continuité',c8:"L'égalité"}
+      },
+      {
+        key:'active-learning-vocab-v1', name:'Vocabulaire', href:'vocabulaire/index.html',
+        ids:['v1','v2','v3','v4','v5','v6','v7','v8','v9'], okValue:'known', anchor:function(id){ return 'vcard-' + id; },
+        labels:{v1:'Contribuable',v2:'TVA',v3:'Cadastre',v4:'Recouvrement',v5:'Dégrèvement',v6:'Prélèvement à la source',v7:'Exercice budgétaire',v8:"Avis d'imposition",v9:'Impôt direct/indirect'}
+      },
+      {
+        key:'active-learning-ortho-v1', name:'Orthographe', href:'vocabulaire/index.html',
+        ids:['p1','p2','p3','p4','p5','p6','p7','p8'], okValue:'known', anchor:function(id){ return 'sentence-' + id; },
+        labels:{p1:'Accord du participe passé',p2:'Ses / ces',p3:'Quand / quant',p4:'Fermé (adjectif)',p5:'Participe invariable',p6:'A / à',p7:'Bien que + subjonctif',p8:'Pluriel des noms en -al'}
+      }
+    ];
+
+    var totalItems = 0, totalMastered = 0;
+    var priorityItems = [];
+    var barsHtml = '';
+
+    MODULES.forEach(function(mod){
+      var state = safeGet(mod.key);
+      var mastered = 0;
+      mod.ids.forEach(function(id){
+        totalItems++;
+        var val = state[id];
+        if(val === mod.okValue){
+          mastered++;
+          totalMastered++;
+        } else if(val){
+          priorityItems.push({mod:mod.name, href:mod.href + '#' + mod.anchor(id), label:mod.labels[id]});
+        }
+      });
+      var pct = mod.ids.length ? Math.round((mastered / mod.ids.length) * 100) : 0;
+      barsHtml +=
+        '<a class="bar-row" href="' + mod.href + '">' +
+          '<span class="bar-label">' + mod.name + '</span>' +
+          '<span class="bar-track"><span class="bar-fill" style="width:' + pct + '%"></span></span>' +
+          '<span class="bar-frac">' + mastered + '/' + mod.ids.length + '</span>' +
+        '</a>';
+    });
+
+    document.getElementById('module-bars').innerHTML = barsHtml;
+
+    var pctTotal = totalItems ? totalMastered / totalItems : 0;
+    var circumference = 326.7;
+    document.getElementById('ring-fill').style.strokeDashoffset = circumference * (1 - pctTotal);
+    AL.countUp(document.getElementById('ring-value'), totalMastered, 900);
+    document.getElementById('ring-total').textContent = '/ ' + totalItems + ' maîtrisés';
+
+    document.getElementById('streak-value').textContent = AL.getStreak();
+
+    var list = document.getElementById('priority-list');
+    if(totalMastered === 0 && priorityItems.length === 0){
+      list.innerHTML = '<div class="dash-empty">Ta progression apparaîtra ici dès que tu auras commencé un exercice — choisis un module ci-dessous pour te lancer.</div>';
+    } else if(priorityItems.length === 0){
+      list.innerHTML = '<div class="dash-done">Rien à revoir pour l\'instant. Reviens dans quelques jours pour vérifier que ça tient toujours.</div>';
+    } else {
+      list.innerHTML = priorityItems.map(function(item){
+        return '<a class="priority-item" href="' + item.href + '">' +
+          '<span><span class="mod-tag">' + item.mod + '</span> ' + item.label + '</span>' +
+          '<span class="go-arrow">→</span>' +
+        '</a>';
+      }).join('');
+    }
+  })();
 </script>
 </body>
 </html>

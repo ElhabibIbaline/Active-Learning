@@ -451,6 +451,7 @@
     saveState(state);
     applyCardState(id);
     updateRecap();
+    AL.markActiveDay();
     if(known){
       var rect = ev.target.getBoundingClientRect();
       AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);

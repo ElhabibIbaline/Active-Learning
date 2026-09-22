@@ -38,6 +38,7 @@
   .floor-3{--acc:var(--focus);}
   .floor-4{--acc:var(--brick);}
   .floor-5{--acc:var(--plum);}
+  .floor-6{--acc:var(--teal);}
 
   .floor-tag{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
   .floor-shape{width:30px; height:30px; color:var(--acc); flex:none;}
@@ -116,6 +117,19 @@
   .floor.in-view .balance2{transform:rotate(4deg);}
   .balance2-label{font-family:"IBM Plex Mono",monospace; font-size:10px; fill:var(--ink-soft);}
 
+  /* --- étage 6 : fronton à 3 piliers --- */
+  .pediment{display:flex; align-items:flex-end; gap:10px; justify-content:center;}
+  .pillar{
+    width:44px; background:color-mix(in srgb, var(--acc) 18%, var(--raised)); border:1.5px solid var(--acc);
+    border-radius:4px 4px 0 0; display:flex; align-items:flex-start; justify-content:center; padding-top:8px;
+    text-align:center; font-size:.68rem; font-weight:600; color:var(--acc);
+    transform:translateY(30px); opacity:0; transition:transform .6s ease, opacity .6s ease;
+  }
+  .floor.in-view .pillar{transform:translateY(0); opacity:1;}
+  .pillar:nth-child(1){height:90px; transition-delay:.05s;}
+  .pillar:nth-child(2){height:120px; transition-delay:.2s;}
+  .pillar:nth-child(3){height:90px; transition-delay:.35s;}
+
   /* ---- tiroir à souvenirs (flashcards) ---- */
   .memory-drawer{padding-block:60px 20px;}
   .memory-drawer h2{font-size:1.4rem; margin-bottom:8px;}
@@ -164,13 +178,14 @@
   <header class="room-top">
     <div class="eyebrow">Module 03 · Immeuble administratif</div>
     <h1>L'Immeuble de la Culture Administrative</h1>
-    <p>Cinq étages, chacun avec sa couleur et sa forme. Scrolle pour les visiter : les mots à retenir se surlignent tout seuls quand tu arrives dessus.</p>
+    <p>Six étages, chacun avec sa couleur et sa forme. Scrolle pour les visiter : les mots à retenir se surlignent tout seuls quand tu arrives dessus.</p>
     <nav class="elevator" id="elevator" aria-label="Étages de l'immeuble">
       <button class="elevator-btn" data-floor="1" onclick="goFloor(1)"><svg class="shape" viewBox="0 0 20 20"><circle cx="10" cy="10" r="8" fill="var(--gold)"/></svg>Le concours</button>
       <button class="elevator-btn" data-floor="2" onclick="goFloor(2)"><svg class="shape" viewBox="0 0 20 20"><rect x="2" y="2" width="16" height="16" rx="3" fill="var(--sage)"/></svg>La DGFiP</button>
       <button class="elevator-btn" data-floor="3" onclick="goFloor(3)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,2 18,18 2,18" fill="var(--focus)"/></svg>Le statut</button>
       <button class="elevator-btn" data-floor="4" onclick="goFloor(4)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,1 18,5.5 18,14.5 10,19 2,14.5 2,5.5" fill="var(--brick)"/></svg>Les devoirs</button>
       <button class="elevator-btn" data-floor="5" onclick="goFloor(5)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,1 19,10 10,19 1,10" fill="var(--plum)"/></svg>L'organisation</button>
+      <button class="elevator-btn" data-floor="6" onclick="goFloor(6)"><svg class="shape" viewBox="0 0 20 20"><polygon points="10,1 18,7.5 15,17 5,17 2,7.5" fill="var(--teal)"/></svg>Les principes</button>
     </nav>
   </header>
 
@@ -309,6 +324,27 @@
     </div>
   </section>
 
+  <!-- ÉTAGE 6 : LES PRINCIPES -->
+  <section class="floor floor-6" id="floor-6" data-floor="6">
+    <div class="floor-tag">
+      <svg class="floor-shape" viewBox="0 0 20 20"><polygon points="10,1 18,7.5 15,17 5,17 2,7.5" fill="var(--acc)"/></svg>
+      <span class="floor-label">Le fronton</span>
+    </div>
+    <h2>Les grands principes du service public</h2>
+    <div class="floor-body">
+      <div>
+        <p class="copy">Trois piliers soutiennent tout le reste de l'immeuble. <span class="key">Continuité</span> : le service ne s'arrête jamais, même les jours de grève un service minimum est assuré. <span class="key">Égalité</span> : tous les usagers reçoivent le même traitement, sans distinction. <span class="key">Adaptabilité</span> : le service évolue avec les besoins et les technologies, il ne reste jamais figé.</p>
+      </div>
+      <div class="visual">
+        <div class="pediment" aria-hidden="true">
+          <div class="pillar">Continuité</div>
+          <div class="pillar">Égalité</div>
+          <div class="pillar">Adaptabilité</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
   <!-- TIROIR À SOUVENIRS -->
   <section class="memory-drawer">
     <h2>Le tiroir à souvenirs</h2>
@@ -368,7 +404,9 @@
     {id:'c3', tag:'Le statut', q:"Quel diplôme minimum pour ce concours ?", a:"Le brevet des collèges (DNB) ou un niveau équivalent."},
     {id:'c4', tag:'Les devoirs', q:"Que veut dire « neutralité » pour un agent public ?", a:"Ne pas exprimer ses opinions politiques ou religieuses dans l'exercice de ses fonctions."},
     {id:'c5', tag:"L'organisation", q:"Pourquoi sépare-t-on ordonnateur et comptable public ?", a:"Pour qu'une même personne ne décide pas ET ne paie pas seule une dépense — un contrôle mutuel."},
-    {id:'c6', tag:"L'organisation", q:"Où travaille la plupart des agents de catégorie C ?", a:"Dans les services déconcentrés : les DDFiP et DRFiP."}
+    {id:'c6', tag:"L'organisation", q:"Où travaille la plupart des agents de catégorie C ?", a:"Dans les services déconcentrés : les DDFiP et DRFiP."},
+    {id:'c7', tag:'Les principes', q:"Que garantit le principe de continuité du service public ?", a:"Le service ne s'interrompt jamais complètement, même en cas de grève (service minimum)."},
+    {id:'c8', tag:'Les principes', q:"Que garantit le principe d'égalité du service public ?", a:"Tous les usagers reçoivent le même traitement, sans discrimination."}
   ];
 
   var grid = document.getElementById('cards-grid');

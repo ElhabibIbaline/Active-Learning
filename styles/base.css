@@ -15,6 +15,8 @@
   --focus:#2f4d8f;
   --plum:#6d4a7a;
   --plum-bg:#ece4ee;
+  --teal:#2d6e6b;
+  --teal-bg:#e2eeed;
 }
 @media (prefers-color-scheme: dark){
   :root{
@@ -32,6 +34,8 @@
     --focus:#7fa0e6;
     --plum:#c294d1;
     --plum-bg:#2a1f30;
+    --teal:#6fc0bc;
+    --teal-bg:#1a2b2a;
   }
 }
 

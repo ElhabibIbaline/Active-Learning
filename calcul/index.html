@@ -150,6 +150,23 @@
   .perim-svg rect.draw.show{stroke-dashoffset:0;}
   .perim-svg text{font-family:"IBM Plex Mono",monospace; font-size:11px; fill:var(--ink-soft);}
 
+  /* --- salle 6 : triangle vitesse/distance/temps --- */
+  .vdt-triangle{display:flex; flex-direction:column; align-items:center; gap:4px;}
+  .vdt-triangle .top{
+    background:var(--raised); border:1.5px solid var(--gold); border-radius:8px;
+    padding:10px 20px; font-family:"IBM Plex Mono",monospace; font-weight:700;
+  }
+  .vdt-triangle .bottom{display:flex; gap:4px;}
+  .vdt-triangle .bottom div{
+    background:var(--paper); border:1.5px solid var(--line); border-radius:8px;
+    padding:10px 20px; font-family:"IBM Plex Mono",monospace; font-weight:700; color:var(--ink-soft);
+  }
+
+  /* --- salle 7 : pizzas PGCD --- */
+  .pizzas{display:flex; align-items:center; gap:18px; justify-content:center; flex-wrap:wrap;}
+  .pizza-label{text-align:center; font-family:"IBM Plex Mono",monospace; font-size:.8rem; color:var(--ink-soft); margin-top:4px;}
+  .pizza-eq{font-family:"Fraunces",serif; font-weight:900; font-size:1.6rem; color:var(--gold);}
+
   .revision{background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:22px; margin-block:26px;}
   .revision h2{font-size:1.1rem; margin-bottom:6px;}
   .revision p{color:var(--ink-soft); font-size:.88rem; line-height:1.5; max-width:60ch;}
@@ -186,11 +203,13 @@
       <button class="door-dot" data-room="3" onclick="goRoom(3)"><span class="n">3</span> Règle de 3</button>
       <button class="door-dot" data-room="4" onclick="goRoom(4)"><span class="n">4</span> Conversions</button>
       <button class="door-dot" data-room="5" onclick="goRoom(5)"><span class="n">5</span> Périmètres</button>
+      <button class="door-dot" data-room="6" onclick="goRoom(6)"><span class="n">6</span> Vitesse</button>
+      <button class="door-dot" data-room="7" onclick="goRoom(7)"><span class="n">7</span> Fractions &amp; PGCD</button>
     </nav>
   </header>
 
   <section class="intro">
-    <p>Même palais, cinq nouvelles salles. Chacune a son placard : un tiroir à ouvrir pour une astuce en plus, sans surcharger la salle principale. Devine avant de regarder — c'est toujours l'effet de génération qui fait tenir l'info.</p>
+    <p>Même palais, sept salles maintenant. Chacune a son placard : un tiroir à ouvrir pour une astuce en plus, sans surcharger la salle principale. Devine avant de regarder — c'est toujours l'effet de génération qui fait tenir l'info.</p>
   </section>
 
   <!-- ROOM 1 : priorités opératoires -->
@@ -403,6 +422,96 @@
     </div>
   </article>
 
+  <!-- ROOM 6 : vitesse, distance, temps -->
+  <article class="room" id="room-6">
+    <div>
+      <div class="room-head">
+        <span class="door-num">06</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 20a9 9 0 0 1 18 0" stroke="currentColor" stroke-width="1.8"/><line x1="13" y1="20" x2="19" y2="12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13" cy="20" r="1.6" fill="currentColor"/></svg>
+        <h2>Vitesse, distance, temps</h2>
+      </div>
+      <p class="rule">Les trois grandeurs sont liées par <strong>Distance = Vitesse × Temps</strong>. Cache celle que tu cherches dans le triangle : la formule apparaît toute seule.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Distance en haut, Vitesse et Temps en bas : cache D → V×T ; cache V → D÷T ; cache T → D÷V.
+      </p>
+      <button class="placard-btn" id="placard-btn-6" onclick="togglePlacard(6)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — passer de km/h à m/s
+      </button>
+      <div class="placard-content" id="placard-6">Pour convertir une vitesse de km/h en m/s, divise par 3,6 (1 km/h = 1000 m ÷ 3600 s). Pour l'inverse, multiplie par 3,6. Exemple : 90 km/h ÷ 3,6 = 25 m/s.</div>
+    </div>
+    <div class="lab">
+      <div class="vdt-triangle" aria-hidden="true">
+        <div class="top">Distance</div>
+        <div class="bottom"><div>Vitesse</div><div>Temps</div></div>
+      </div>
+      <p style="margin:0; font-size:.9rem;">Un train parcourt <b>240 km</b> en <b>3 heures</b>. Quelle est sa vitesse moyenne ?</p>
+      <div class="guess-row">
+        <input type="number" id="r6-input" aria-label="Vitesse en km/h" placeholder="?" style="width:11ch">
+        <button class="go" onclick="check6(event)">Vérifier</button>
+      </div>
+      <div class="verdict" id="r6-verdict"></div>
+      <div class="reveal" id="r6-reveal">
+        Vitesse = Distance ÷ Temps = 240 ÷ 3 = <b>80 km/h</b>.
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 7 : fractions & PGCD -->
+  <article class="room" id="room-7">
+    <div>
+      <div class="room-head">
+        <span class="door-num">07</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="10.5" stroke="currentColor" stroke-width="1.6"/><path d="M13 2.5v21M2.5 13h21" stroke="currentColor" stroke-width="1.2"/></svg>
+        <h2>Fractions &amp; PGCD</h2>
+      </div>
+      <p class="rule">Simplifier une fraction, c'est diviser le haut et le bas par leur <strong>Plus Grand Commun Diviseur</strong> — la valeur ne change pas, seule la présentation change.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Une pizza coupée en moins de parts, mais chaque part plus grosse : la quantité mangée ne change pas.
+      </p>
+      <button class="placard-btn" id="placard-btn-7" onclick="togglePlacard(7)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — trouver un PGCD rapidement
+      </button>
+      <div class="placard-content" id="placard-7">Teste dans l'ordre : les deux nombres sont-ils pairs (÷2) ? Divisibles par 3 (la somme des chiffres l'est) ? Par 5 (finissent par 0 ou 5) ? Répète jusqu'à ce qu'il n'y ait plus de diviseur commun.</div>
+    </div>
+    <div class="lab">
+      <div class="pizzas" aria-hidden="true">
+        <div>
+          <svg width="88" height="88" viewBox="0 0 88 88">
+            <path d="M44,44 L44,4 A40,40 0 0,1 72.28,15.72 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M44,44 L72.28,15.72 A40,40 0 0,1 84,44 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M44,44 L84,44 A40,40 0 0,1 72.28,72.28 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M44,44 L72.28,72.28 A40,40 0 0,1 44,84 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M44,44 L44,84 A40,40 0 0,1 15.72,72.28 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M44,44 L15.72,72.28 A40,40 0 0,1 4,44 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M44,44 L4,44 A40,40 0 0,1 15.72,15.72 Z" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+            <path d="M44,44 L15.72,15.72 A40,40 0 0,1 44,4 Z" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+          </svg>
+          <div class="pizza-label">6 / 8</div>
+        </div>
+        <span class="pizza-eq">=</span>
+        <div>
+          <svg width="88" height="88" viewBox="88 0 96 88">
+            <path d="M140,44 L140,4 A40,40 0 0,1 180,44 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M140,44 L180,44 A40,40 0 0,1 140,84 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M140,44 L140,84 A40,40 0 0,1 100,44 Z" fill="var(--gold)" stroke="var(--raised)" stroke-width="1.5"/>
+            <path d="M140,44 L100,44 A40,40 0 0,1 140,4 Z" fill="var(--paper)" stroke="var(--line)" stroke-width="1.5"/>
+          </svg>
+          <div class="pizza-label">3 / 4</div>
+        </div>
+      </div>
+      <p style="margin:0; font-size:.9rem;">Quel est le PGCD de <b>36</b> et <b>60</b> ?</p>
+      <div class="opts" id="pgcd-opts"></div>
+      <div class="verdict" id="r7-verdict"></div>
+      <div class="reveal" id="r7-reveal">
+        36 = 2² × 3² et 60 = 2² × 3 × 5 : les facteurs communs sont 2² et 3, donc PGCD = 4 × 3 = <b>12</b>.
+      </div>
+    </div>
+  </article>
+
   <section class="revision">
     <h2>Salle de révision</h2>
     <p>Reviens uniquement sur les salles où tu t'es trompé·e ou que tu n'as pas encore essayées.</p>
@@ -427,7 +536,7 @@
 <script>
 (function(){
   var STATE_KEY = 'active-learning-calcul-v1';
-  var ROOM_LABELS = {1:'Priorités',2:'% successifs',3:'Règle de 3',4:'Conversions',5:'Périmètres'};
+  var ROOM_LABELS = {1:'Priorités',2:'% successifs',3:'Règle de 3',4:'Conversions',5:'Périmètres',6:'Vitesse',7:'Fractions & PGCD'};
 
   function loadState(){
     try{ var raw = localStorage.getItem(STATE_KEY); return raw ? JSON.parse(raw) : {}; }
@@ -454,7 +563,7 @@
     var list = document.getElementById('weak-list');
     list.innerHTML = '';
     var anyIncomplete = false;
-    [1,2,3,4,5].forEach(function(r){
+    [1,2,3,4,5,6,7].forEach(function(r){
       var st = state[r];
       if(st !== 'mastered'){
         anyIncomplete = true;
@@ -556,6 +665,43 @@
     if(ok){ celebrate(ev); AL.countUp(resultEl, 34, 900); } else { resultEl.textContent = '34'; }
     setRoomResult(5, ok);
   };
+
+  // Room 6 : vitesse, distance, temps
+  window.check6 = function(ev){
+    var val = parseInt(document.getElementById('r6-input').value, 10);
+    var ok = val === 80;
+    showVerdict(document.getElementById('r6-verdict'), ok, ok ? 'Exact — 80 km/h.' : 'Pas tout à fait. Regarde le triangle ci-dessus.');
+    document.getElementById('r6-reveal').classList.add('show');
+    if(ok) celebrate(ev);
+    setRoomResult(6, ok);
+  };
+
+  // Room 7 : fractions & PGCD
+  (function buildPgcd(){
+    var opts = document.getElementById('pgcd-opts');
+    var choices = [
+      {label:'6', correct:false},
+      {label:'12', correct:true},
+      {label:'18', correct:false},
+      {label:'24', correct:false}
+    ];
+    choices.forEach(function(c){
+      var btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.style.cssText = 'padding:10px 16px; font-family:"IBM Plex Mono",monospace; font-size:.95rem; font-weight:700;';
+      btn.textContent = c.label;
+      btn.onclick = function(ev){
+        var allOpts = opts.querySelectorAll('.opt');
+        allOpts.forEach(function(o){ o.disabled = true; });
+        if(c.correct){ btn.classList.add('correct'); } else { btn.classList.add('wrong'); }
+        showVerdict(document.getElementById('r7-verdict'), c.correct, c.correct ? 'Exact — 12.' : 'Pas tout à fait. Regarde la décomposition ci-dessous.');
+        document.getElementById('r7-reveal').classList.add('show');
+        if(c.correct) celebrate(ev);
+        setRoomResult(7, c.correct);
+      };
+      opts.appendChild(btn);
+    });
+  })();
 
   renderDoors();
   renderWeakList();

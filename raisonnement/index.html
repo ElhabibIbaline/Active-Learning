@@ -1,0 +1,610 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Raisonnement logique — Active Learning</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="../styles/base.css">
+<style>
+  body{padding-block:0 32px;}
+
+  /* ---- doors nav (non sticky : la nav sticky de l'app est déjà en haut) ---- */
+  .room-top{padding-block:22px 10px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px;}
+  .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep); font-weight:600;}
+  .room-top h1{font-size:1.3rem; font-weight:600;}
+  nav.doors{display:flex; gap:8px; flex-wrap:wrap;}
+  .door-dot{
+    display:flex; align-items:center; gap:6px;
+    border:1.5px solid var(--line); background:var(--raised);
+    color:var(--ink-soft); border-radius:999px;
+    padding:5px 10px 5px 6px; font-size:.72rem; font-weight:600;
+    cursor:pointer; font-family:"IBM Plex Mono",monospace;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .door-dot .n{
+    width:18px;height:18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--line); color:var(--paper); font-size:.65rem;
+  }
+  .door-dot[data-state="mastered"]{border-color:var(--sage); color:var(--sage);}
+  .door-dot[data-state="mastered"] .n{background:var(--sage); color:var(--raised);}
+  .door-dot[data-state="weak"]{border-color:var(--brick); color:var(--brick);}
+  .door-dot[data-state="weak"] .n{background:var(--brick); color:var(--raised);}
+  .door-dot:hover{border-color:var(--focus);}
+
+  /* ---- intro ---- */
+  .intro{padding-block:22px 8px;}
+  .intro p{color:var(--ink-soft); max-width:60ch; line-height:1.55;}
+
+  /* ---- room card ---- */
+  .room{
+    background:var(--raised); border:1px solid var(--line);
+    border-radius:14px; margin-block:18px; padding:22px;
+    scroll-margin-top:70px;
+    display:grid; grid-template-columns:1fr; gap:18px;
+  }
+  @media(min-width:680px){
+    .room{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:26px;}
+  }
+  .room-head{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+  .door-num{
+    font-family:"Fraunces",serif; font-weight:900; font-size:1.6rem;
+    color:var(--gold); line-height:1; min-width:2.2ch;
+  }
+  .room-icon{color:var(--gold); flex:none;}
+  .room h2{font-size:1.15rem; font-weight:600;}
+  .rule{color:var(--ink-soft); font-size:.92rem; line-height:1.55; margin-block:8px 14px;}
+  .rule strong{color:var(--ink); font-weight:600;}
+  .mnemo{
+    background:var(--sage-bg); border:1px solid var(--sage);
+    color:var(--sage); border-radius:8px; padding:8px 12px;
+    font-size:.82rem; line-height:1.4; display:flex; gap:8px; align-items:flex-start;
+  }
+  .mnemo svg{flex:none; margin-top:2px;}
+
+  .lab{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:16px; display:flex; flex-direction:column; gap:14px;
+  }
+  .seq{
+    display:flex; align-items:center; gap:6px; flex-wrap:wrap;
+    font-size:1.05rem; font-weight:600;
+  }
+  .seq .chip{
+    background:var(--raised); border:1px solid var(--line);
+    border-radius:8px; padding:6px 10px; min-width:2.4ch; text-align:center;
+  }
+  .seq .op{color:var(--gold-deep); font-size:.78rem; font-weight:600;}
+  .seq .qmark{
+    border:1.5px dashed var(--gold); color:var(--gold-deep);
+    background:transparent;
+  }
+
+  .guess-row{display:flex; gap:8px; flex-wrap:wrap;}
+  input[type="text"], input[type="number"]{
+    font-family:"IBM Plex Mono",monospace; font-size:1rem;
+    border:1.5px solid var(--line); border-radius:8px;
+    padding:9px 12px; width:9ch; background:var(--raised); color:var(--ink);
+  }
+  button.go{
+    font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:.88rem;
+    background:var(--ink); color:var(--paper); border:none;
+    border-radius:8px; padding:9px 16px; cursor:pointer;
+  }
+  button.go:hover{background:var(--gold-deep);}
+
+  .verdict{
+    font-size:.86rem; font-weight:600; border-radius:8px; padding:9px 12px;
+    display:none; align-items:center; gap:8px;
+  }
+  .verdict.show{display:flex;}
+  .verdict.ok{background:var(--sage-bg); color:var(--sage);}
+  .verdict.ko{background:var(--brick-bg); color:var(--brick);}
+
+  .reveal{
+    display:none; border-top:1px dashed var(--line); padding-top:12px;
+    font-size:.86rem; color:var(--ink-soft); line-height:1.55;
+  }
+  .reveal.show{display:block;}
+  .reveal b{color:var(--ink);}
+
+  .staircase{display:flex; align-items:flex-end; gap:6px; height:96px; margin-block:4px;}
+  .staircase .step{
+    background:var(--line); border-radius:5px 5px 0 0;
+    display:flex; align-items:flex-start; justify-content:center;
+    padding-top:4px; font-size:.7rem; font-weight:700; color:var(--ink-soft);
+    width:20%;
+  }
+  .staircase .step.answer{background:var(--gold); color:var(--raised);}
+
+  .alpha-strip{display:flex; flex-wrap:wrap; gap:4px; font-family:"IBM Plex Mono",monospace; font-size:.78rem;}
+  .alpha-strip span{
+    width:22px; height:22px; display:flex; align-items:center; justify-content:center;
+    border-radius:5px; color:var(--ink-soft);
+  }
+  .alpha-strip span.hit{background:var(--gold); color:var(--raised); font-weight:700;}
+
+  .opts{display:flex; gap:10px; flex-wrap:wrap;}
+  .opt{
+    background:var(--raised); border:1.5px solid var(--line); border-radius:10px;
+    padding:10px; cursor:pointer; display:flex; flex-direction:column; align-items:center; gap:6px;
+    font-family:"IBM Plex Mono",monospace; font-size:.78rem; color:var(--ink-soft);
+  }
+  .opt:hover{border-color:var(--gold);}
+  .opt.correct{border-color:var(--sage); background:var(--sage-bg); color:var(--sage);}
+  .opt.wrong{border-color:var(--brick); background:var(--brick-bg); color:var(--brick);}
+  .opt[disabled]{cursor:default;}
+
+  .steps-calc{display:flex; flex-direction:column; gap:4px; font-family:"IBM Plex Mono",monospace; font-size:.82rem;}
+  .steps-calc .line{display:flex; justify-content:space-between; gap:12px; border-bottom:1px dotted var(--line); padding-block:3px;}
+  .steps-calc .line.total{font-weight:700; color:var(--ink); border-bottom:none;}
+
+  /* révision */
+  .revision{
+    background:var(--raised); border:1px solid var(--line); border-radius:14px;
+    padding:22px; margin-block:26px;
+  }
+  .revision h2{font-size:1.1rem; margin-bottom:6px;}
+  .revision p{color:var(--ink-soft); font-size:.88rem; line-height:1.5; max-width:60ch;}
+  .weak-list{display:flex; flex-direction:column; gap:8px; margin-block:14px;}
+  .weak-item{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--paper); border:1px solid var(--line); border-radius:8px;
+    padding:9px 12px; font-size:.86rem;
+  }
+  .weak-item button{
+    background:none; border:1px solid var(--gold); color:var(--gold-deep);
+    border-radius:6px; padding:4px 10px; font-size:.76rem; cursor:pointer; font-weight:600;
+  }
+  .all-done{color:var(--sage); font-weight:600; font-size:.9rem;}
+
+  details.meta{
+    background:var(--raised); border:1px solid var(--line); border-radius:14px;
+    padding:18px 22px; margin-block:20px 8px;
+  }
+  details.meta summary{cursor:pointer; font-weight:600; font-size:.92rem; color:var(--ink);}
+  .meta-grid{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .meta-row{display:flex; gap:10px; font-size:.84rem; color:var(--ink-soft); line-height:1.5;}
+  .meta-row b{color:var(--gold-deep); font-family:"IBM Plex Mono",monospace; font-weight:600; flex:none; min-width:15ch;}
+
+  footer.note{color:var(--ink-soft); font-size:.76rem; text-align:center; padding-block:18px 4px;}
+</style>
+</head>
+<body>
+
+<header class="app-nav">
+  <div class="wrap row">
+    <a class="brand" href="../index.html"><span class="dot"></span> Active Learning</a>
+    <a class="crumb" href="../index.html">← Accueil</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <header class="room-top">
+    <div class="eyebrow">Module 01 · Palais de mémoire</div>
+    <h1>Le Palais des Suites — raisonnement logique &amp; numérique</h1>
+    <nav class="doors" id="doors" aria-label="Salles du palais">
+      <button class="door-dot" data-room="1" onclick="goRoom(1)"><span class="n">1</span> Suites nombres</button>
+      <button class="door-dot" data-room="2" onclick="goRoom(2)"><span class="n">2</span> Suites lettres</button>
+      <button class="door-dot" data-room="3" onclick="goRoom(3)"><span class="n">3</span> Dominos</button>
+      <button class="door-dot" data-room="4" onclick="goRoom(4)"><span class="n">4</span> Matrices</button>
+      <button class="door-dot" data-room="5" onclick="goRoom(5)"><span class="n">5</span> % et proportions</button>
+    </nav>
+  </header>
+
+  <section class="intro">
+    <p>Cinq salles, toujours dans le même ordre, au même endroit. À chaque visite, ton cerveau retrouve chaque type d'épreuve à sa place — comme dans un vrai palais de mémoire. Devine avant de regarder la réponse : c'est ce qui fait tenir l'info.</p>
+  </section>
+
+  <!-- ROOM 1 : suites numériques -->
+  <article class="room" id="room-1">
+    <div>
+      <div class="room-head">
+        <span class="door-num">01</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="16" width="4" height="8" rx="1" fill="currentColor"/><rect x="9" y="11" width="4" height="13" rx="1" fill="currentColor"/><rect x="16" y="5" width="4" height="19" rx="1" fill="currentColor"/><path d="M2 9 L22 2" stroke="currentColor" stroke-width="1.6"/><path d="M22 2 L17 2 M22 2 L22 7" stroke="currentColor" stroke-width="1.6"/></svg>
+        <h2>Suites numériques</h2>
+      </div>
+      <p class="rule">On cherche <strong>l'opération répétée</strong> d'un nombre à l'autre : +, −, ×, ÷, ou une combinaison. Elle est presque toujours <strong>constante</strong>.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Vois chaque terme comme une marche d'escalier : la hauteur entre deux marches, c'est la règle.
+      </p>
+    </div>
+    <div class="lab">
+      <div class="seq">
+        <span class="chip nums">3</span><span class="op">×3</span>
+        <span class="chip nums">9</span><span class="op">×3</span>
+        <span class="chip nums">27</span><span class="op">×3</span>
+        <span class="chip nums">81</span><span class="op">×3</span>
+        <span class="chip nums qmark">?</span>
+      </div>
+      <div class="guess-row">
+        <input type="number" id="r1-input" aria-label="Ta réponse pour la suite numérique" placeholder="?">
+        <button class="go" onclick="check1()">Vérifier</button>
+      </div>
+      <div class="verdict" id="r1-verdict"></div>
+      <div class="reveal" id="r1-reveal">
+        <div class="staircase" aria-hidden="true">
+          <div class="step" style="height:20%">3</div>
+          <div class="step" style="height:38%">9</div>
+          <div class="step" style="height:58%">27</div>
+          <div class="step" style="height:78%">81</div>
+          <div class="step answer" style="height:100%">243</div>
+        </div>
+        La règle est <b>×3 à chaque étage</b>. 81 × 3 = <b>243</b>. Truc : sur ce type de suite, teste toujours d'abord ×2 et ×3 avant de chercher plus compliqué — ce sont les plus fréquents au concours.
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 2 : suites de lettres -->
+  <article class="room" id="room-2">
+    <div>
+      <div class="room-head">
+        <span class="door-num">02</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="1" y="9" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="9.5" y="9" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="18" y="9" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.6"/><text x="4.5" y="14" font-size="5" fill="currentColor" font-family="monospace">B</text><text x="13" y="14" font-size="5" fill="currentColor" font-family="monospace">D</text><text x="21.5" y="14" font-size="5" fill="currentColor" font-family="monospace">F</text></svg>
+        <h2>Suites de lettres</h2>
+      </div>
+      <p class="rule">Remplace chaque lettre par <strong>sa position dans l'alphabet</strong> (A=1 … Z=26). La suite devient alors une suite numérique classique.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Une lettre sur deux, comme des marches jumelles : on saute toujours la même distance.
+      </p>
+    </div>
+    <div class="lab">
+      <div class="seq">
+        <span class="chip nums">B</span><span class="op">+2</span>
+        <span class="chip nums">D</span><span class="op">+2</span>
+        <span class="chip nums">F</span><span class="op">+2</span>
+        <span class="chip nums">H</span><span class="op">+2</span>
+        <span class="chip nums qmark">?</span>
+      </div>
+      <div class="guess-row">
+        <input type="text" id="r2-input" maxlength="1" aria-label="Ta réponse pour la suite de lettres" placeholder="?" style="text-transform:uppercase">
+        <button class="go" onclick="check2()">Vérifier</button>
+      </div>
+      <div class="verdict" id="r2-verdict"></div>
+      <div class="reveal" id="r2-reveal">
+        <div class="alpha-strip" id="alpha-strip" aria-hidden="true"></div>
+        <div style="margin-top:8px">On saute une lettre sur deux : B(2), D(4), F(6), H(8) → <b>J(10)</b>. Truc : compte sur tes doigts la position depuis A plutôt que de réciter tout l'alphabet.</div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 3 : dominos -->
+  <article class="room" id="room-3">
+    <div>
+      <div class="room-head">
+        <span class="door-num">03</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="4" width="10" height="18" rx="2" stroke="currentColor" stroke-width="1.6"/><line x1="2" y1="13" x2="12" y2="13" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="8.5" r="1.1" fill="currentColor"/><circle cx="5" cy="17" r="1.1" fill="currentColor"/><circle cx="9" cy="17" r="1.1" fill="currentColor"/><circle cx="5" cy="19.5" r="1.1" fill="currentColor"/><circle cx="9" cy="19.5" r="1.1" fill="currentColor"/></svg>
+        <h2>Dominos logiques</h2>
+      </div>
+      <p class="rule">Compare les deux faces de chaque domino : cherche une <strong>somme, une différence ou une progression constante</strong> qui relie les dominos entre eux.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Additionne toujours les deux faces en premier : la constante saute souvent aux yeux.
+      </p>
+    </div>
+    <div class="lab">
+      <div id="domino-row" style="display:flex; gap:14px; align-items:center; flex-wrap:wrap;"></div>
+      <div>Quel domino complète la série ?</div>
+      <div class="opts" id="domino-opts"></div>
+      <div class="verdict" id="r3-verdict"></div>
+      <div class="reveal" id="r3-reveal">
+        La somme des deux faces vaut toujours <b>7</b>, et la face du haut perd un point pendant que celle du bas en gagne un : 6-1, 5-2, 4-3, puis <b>3-4</b>.
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 4 : matrices -->
+  <article class="room" id="room-4">
+    <div>
+      <div class="room-head">
+        <span class="door-num">04</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="2" width="9" height="9" rx="1.5" fill="currentColor"/><rect x="15" y="2" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="15" width="9" height="9" rx="1.5" fill="currentColor"/><rect x="15" y="15" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2"/></svg>
+        <h2>Matrices analogiques</h2>
+      </div>
+      <p class="rule">Trouve la <strong>transformation</strong> entre A et B (couleur, remplissage, forme, rotation), puis applique-la exactement à C pour trouver la case manquante.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Nomme la règle à voix haute en un mot : "on vide", "on tourne", "on change de couleur".
+      </p>
+    </div>
+    <div class="lab">
+      <div id="matrix-grid" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; align-items:center; max-width:340px;"></div>
+      <div>Que faut-il mettre à la place du point d'interrogation ?</div>
+      <div class="opts" id="matrix-opts"></div>
+      <div class="verdict" id="r4-verdict"></div>
+      <div class="reveal" id="r4-reveal">
+        La règle est <b>« on vide la forme »</b> : le carré plein devient un carré à contour. Appliquée au cercle plein doré, on obtient un <b>cercle doré à contour</b>.
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 5 : pourcentages -->
+  <article class="room" id="room-5">
+    <div>
+      <div class="room-head">
+        <span class="door-num">05</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="19" cy="19" r="4" stroke="currentColor" stroke-width="1.6"/><line x1="21" y1="4" x2="5" y2="22" stroke="currentColor" stroke-width="1.6"/></svg>
+        <h2>Pourcentages &amp; proportions</h2>
+      </div>
+      <p class="rule">Décompose toujours un pourcentage en <strong>10 % + 5 % + 1 %</strong> plutôt que de poser une multiplication directe : c'est plus rapide et sans calculatrice.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        10 % = on déplace la virgule. 5 % = la moitié de 10 %. 1 % = un dixième de 10 %.
+      </p>
+    </div>
+    <div class="lab">
+      <p style="margin:0; font-size:.92rem; line-height:1.5;">Un centre des finances publiques traite <span class="nums" style="font-weight:700">1 240</span> dossiers ce mois-ci. <span style="font-weight:700">15 %</span> sont classés prioritaires. Combien de dossiers sont prioritaires ?</p>
+      <div class="guess-row">
+        <input type="number" id="r5-input" aria-label="Nombre de dossiers prioritaires" placeholder="?" style="width:11ch">
+        <button class="go" onclick="check5()">Vérifier</button>
+      </div>
+      <div class="verdict" id="r5-verdict"></div>
+      <div class="reveal" id="r5-reveal">
+        <div class="steps-calc">
+          <div class="line"><span>10 % de 1 240 (on déplace la virgule)</span><span>124</span></div>
+          <div class="line"><span>5 % de 1 240 (moitié de 124)</span><span>62</span></div>
+          <div class="line total"><span>15 % = 124 + 62</span><span>186 dossiers</span></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- révision espacée -->
+  <section class="revision">
+    <h2>Salle de révision</h2>
+    <p>Répétition espacée : reviens uniquement sur les salles où tu t'es trompé·e ou que tu n'as pas encore essayées. Pas besoin de tout refaire à chaque fois.</p>
+    <div class="weak-list" id="weak-list"></div>
+  </section>
+
+  <details class="meta">
+    <summary>Comment cette page applique les techniques de mémorisation</summary>
+    <div class="meta-grid">
+      <div class="meta-row"><b>Palais de mémoire</b> Chaque salle a une position fixe et un numéro : à chaque visite, ton cerveau retrouve le même type d'épreuve au même endroit.</div>
+      <div class="meta-row"><b>Chunking</b> 5 salles courtes plutôt qu'un long chapitre : chaque bloc tient dans la tête d'un coup.</div>
+      <div class="meta-row"><b>Double codage</b> Chaque règle a un texte court <em>et</em> un schéma (escalier, alphabet, dominos, formes) : deux chemins vers le même souvenir.</div>
+      <div class="meta-row"><b>Effet de génération</b> Tu dois deviner avant que la réponse apparaisse : on retient mieux ce qu'on a essayé de produire soi-même.</div>
+      <div class="meta-row"><b>Répétition espacée</b> La salle de révision ne fait resurgir que ce qui n'est pas encore acquis, au lieu de tout repasser en boucle.</div>
+    </div>
+  </details>
+
+  <footer class="note">Active Learning — module raisonnement logique.</footer>
+</div>
+
+<script>
+(function(){
+  var STATE_KEY = 'active-learning-raisonnement-v1';
+  var ROOM_LABELS = {1:'Suites nombres',2:'Suites lettres',3:'Dominos',4:'Matrices',5:'% et proportions'};
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STATE_KEY);
+      return raw ? JSON.parse(raw) : {};
+    }catch(e){ return {}; }
+  }
+  function saveState(state){
+    try{ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){}
+  }
+  var state = loadState();
+
+  function setRoomResult(room, correct){
+    state[room] = correct ? 'mastered' : 'weak';
+    saveState(state);
+    renderDoors();
+    renderWeakList();
+  }
+
+  function renderDoors(){
+    document.querySelectorAll('.door-dot').forEach(function(dot){
+      var r = dot.getAttribute('data-room');
+      var st = state[r];
+      if(st === 'mastered'){ dot.setAttribute('data-state','mastered'); }
+      else if(st === 'weak'){ dot.setAttribute('data-state','weak'); }
+      else { dot.removeAttribute('data-state'); }
+    });
+  }
+
+  function renderWeakList(){
+    var list = document.getElementById('weak-list');
+    list.innerHTML = '';
+    var anyIncomplete = false;
+    [1,2,3,4,5].forEach(function(r){
+      var st = state[r];
+      if(st !== 'mastered'){
+        anyIncomplete = true;
+        var row = document.createElement('div');
+        row.className = 'weak-item';
+        var label = document.createElement('span');
+        label.textContent = 'Salle ' + r + ' — ' + ROOM_LABELS[r] + (st === 'weak' ? ' (à revoir)' : ' (pas encore essayée)');
+        var btn = document.createElement('button');
+        btn.textContent = 'Y aller';
+        btn.onclick = (function(rr){ return function(){ goRoom(rr); }; })(r);
+        row.appendChild(label); row.appendChild(btn);
+        list.appendChild(row);
+      }
+    });
+    if(!anyIncomplete){
+      var done = document.createElement('div');
+      done.className = 'all-done';
+      done.textContent = 'Toutes les salles sont maîtrisées. Reviens dans quelques jours pour vérifier que ça tient.';
+      list.appendChild(done);
+    }
+  }
+
+  window.goRoom = function(n){
+    var el = document.getElementById('room-' + n);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+
+  function showVerdict(el, ok, msg){
+    el.className = 'verdict show ' + (ok ? 'ok' : 'ko');
+    el.textContent = msg;
+  }
+
+  // Room 1 : suites numériques
+  window.check1 = function(){
+    var input = document.getElementById('r1-input');
+    var val = parseInt(input.value, 10);
+    var ok = val === 243;
+    showVerdict(document.getElementById('r1-verdict'), ok, ok ? 'Exact — 243.' : 'Pas tout à fait. Regarde le schéma ci-dessous.');
+    document.getElementById('r1-reveal').classList.add('show');
+    setRoomResult(1, ok);
+  };
+
+  // Room 2 : suites de lettres
+  var ALPHA = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+  (function buildAlphaStrip(){
+    var strip = document.getElementById('alpha-strip');
+    var hits = ['B','D','F','H','J'];
+    for(var i=0;i<ALPHA.length;i++){
+      var span = document.createElement('span');
+      span.textContent = ALPHA[i];
+      if(hits.indexOf(ALPHA[i]) !== -1) span.className = 'hit';
+      strip.appendChild(span);
+    }
+  })();
+  window.check2 = function(){
+    var input = document.getElementById('r2-input');
+    var val = (input.value || '').trim().toUpperCase();
+    var ok = val === 'J';
+    showVerdict(document.getElementById('r2-verdict'), ok, ok ? 'Exact — J.' : 'Pas tout à fait. Regarde l\'alphabet ci-dessous.');
+    document.getElementById('r2-reveal').classList.add('show');
+    setRoomResult(2, ok);
+  };
+
+  // Room 3 : dominos (pips)
+  var PIP_MAP = {
+    1:[[1,1]],
+    2:[[0,0],[2,2]],
+    3:[[0,0],[1,1],[2,2]],
+    4:[[0,0],[0,2],[2,0],[2,2]],
+    5:[[0,0],[0,2],[1,1],[2,0],[2,2]],
+    6:[[0,0],[1,0],[2,0],[0,2],[1,2],[2,2]]
+  };
+  function halfSVG(n){
+    var pips = PIP_MAP[n] || [];
+    var svg = '<svg width="36" height="34" viewBox="0 0 36 34">';
+    svg += '<rect x="1" y="1" width="34" height="32" rx="4" fill="none" stroke="currentColor" stroke-width="1.4"/>';
+    pips.forEach(function(p){
+      var cx = 9 + p[0]*9;
+      var cy = 8 + p[1]*9;
+      svg += '<circle cx="'+cx+'" cy="'+cy+'" r="2.4" fill="currentColor"/>';
+    });
+    svg += '</svg>';
+    return svg;
+  }
+  function dominoSVG(top, bottom){
+    return '<div style="display:flex;flex-direction:column;gap:2px;color:var(--ink);">' + halfSVG(top) + halfSVG(bottom) + '</div>';
+  }
+  (function buildDominoRow(){
+    var row = document.getElementById('domino-row');
+    [[6,1],[5,2],[4,3]].forEach(function(d){
+      var wrap = document.createElement('div');
+      wrap.innerHTML = dominoSVG(d[0], d[1]);
+      row.appendChild(wrap);
+    });
+    var qm = document.createElement('div');
+    qm.style.cssText = 'font-family:"IBM Plex Mono",monospace;font-size:1.4rem;font-weight:700;color:var(--gold);';
+    qm.textContent = '?';
+    row.appendChild(qm);
+
+    var opts = document.getElementById('domino-opts');
+    var choices = [
+      {top:3,bottom:4,correct:true},
+      {top:2,bottom:5,correct:false},
+      {top:3,bottom:3,correct:false}
+    ];
+    choices.sort(function(){ return Math.random()-0.5; });
+    choices.forEach(function(c){
+      var btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.innerHTML = dominoSVG(c.top, c.bottom);
+      btn.onclick = function(){
+        var allOpts = opts.querySelectorAll('.opt');
+        allOpts.forEach(function(o){ o.disabled = true; });
+        if(c.correct){ btn.classList.add('correct'); }
+        else { btn.classList.add('wrong'); }
+        showVerdict(document.getElementById('r3-verdict'), c.correct, c.correct ? 'Exact — 3 / 4, la somme fait 7.' : 'Pas la bonne règle. Regarde l\'explication ci-dessous.');
+        document.getElementById('r3-reveal').classList.add('show');
+        setRoomResult(3, c.correct);
+      };
+      opts.appendChild(btn);
+    });
+  })();
+
+  // Room 4 : matrices
+  function shapeSVG(shape, filled, color){
+    var fillAttr = filled ? ('fill="'+color+'"') : 'fill="none"';
+    var strokeAttr = 'stroke="'+color+'" stroke-width="2.4"';
+    var body = '';
+    if(shape === 'square') body = '<rect x="6" y="6" width="28" height="28" rx="3" '+fillAttr+' '+strokeAttr+'/>';
+    if(shape === 'circle') body = '<circle cx="20" cy="20" r="14" '+fillAttr+' '+strokeAttr+'/>';
+    if(shape === 'triangle') body = '<polygon points="20,5 35,33 5,33" '+fillAttr+' '+strokeAttr+'/>';
+    return '<svg width="40" height="40" viewBox="0 0 40 40">'+body+'</svg>';
+  }
+  function matrixCell(html, dashed){
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;justify-content:center;background:var(--raised);border:1px'+(dashed?' dashed':' solid')+' var(--line);border-radius:8px;height:64px;';
+    div.innerHTML = html;
+    return div;
+  }
+  function matrixSep(text){
+    var div = document.createElement('div');
+    div.style.cssText = 'display:flex;align-items:center;justify-content:center;font-family:"IBM Plex Mono",monospace;color:var(--ink-soft);font-weight:700;';
+    div.textContent = text;
+    return div;
+  }
+  (function buildMatrix(){
+    var grid = document.getElementById('matrix-grid');
+    var navy = getComputedStyle(document.documentElement).getPropertyValue('--ink').trim() || '#182338';
+    var gold = getComputedStyle(document.documentElement).getPropertyValue('--gold').trim() || '#b97d1f';
+    grid.appendChild(matrixCell(shapeSVG('square', true, navy)));
+    grid.appendChild(matrixSep(':'));
+    grid.appendChild(matrixCell(shapeSVG('square', false, navy)));
+    grid.appendChild(matrixSep('::'));
+    grid.appendChild(matrixCell(shapeSVG('circle', true, gold)));
+    grid.appendChild(matrixSep(':'));
+    grid.appendChild(matrixCell('<span style="font-family:\'Fraunces\',serif;font-size:1.6rem;color:var(--gold);">?</span>', true));
+
+    var opts = document.getElementById('matrix-opts');
+    var choices = [
+      {shape:'circle', filled:false, color:gold, correct:true},
+      {shape:'triangle', filled:false, color:gold, correct:false},
+      {shape:'circle', filled:true, color:gold, correct:false}
+    ];
+    choices.sort(function(){ return Math.random()-0.5; });
+    choices.forEach(function(c){
+      var btn = document.createElement('button');
+      btn.className = 'opt';
+      btn.innerHTML = shapeSVG(c.shape, c.filled, c.color);
+      btn.onclick = function(){
+        var allOpts = opts.querySelectorAll('.opt');
+        allOpts.forEach(function(o){ o.disabled = true; });
+        if(c.correct){ btn.classList.add('correct'); }
+        else { btn.classList.add('wrong'); }
+        showVerdict(document.getElementById('r4-verdict'), c.correct, c.correct ? 'Exact — cercle doré à contour.' : 'Pas la bonne transformation.');
+        document.getElementById('r4-reveal').classList.add('show');
+        setRoomResult(4, c.correct);
+      };
+      opts.appendChild(btn);
+    });
+  })();
+
+  // Room 5 : pourcentages
+  window.check5 = function(){
+    var input = document.getElementById('r5-input');
+    var val = parseInt(input.value, 10);
+    var ok = val === 186;
+    showVerdict(document.getElementById('r5-verdict'), ok, ok ? 'Exact — 186 dossiers.' : 'Pas tout à fait. Regarde le détail ci-dessous.');
+    document.getElementById('r5-reveal').classList.add('show');
+    setRoomResult(5, ok);
+  };
+
+  renderDoors();
+  renderWeakList();
+})();
+</script>
+</body>
+</html>

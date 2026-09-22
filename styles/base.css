@@ -1,0 +1,84 @@
+/* Active Learning — design partagé entre toutes les pages de l'app */
+
+:root{
+  --paper:#eef0e6;
+  --raised:#ffffff;
+  --ink:#182338;
+  --ink-soft:#5b6577;
+  --gold:#b97d1f;
+  --gold-deep:#8f5f14;
+  --sage:#3f6a4c;
+  --sage-bg:#e7f0e9;
+  --brick:#a23f2c;
+  --brick-bg:#f5e6e2;
+  --line:#d7dbcd;
+  --focus:#2f4d8f;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --paper:#12161f;
+    --raised:#1b212d;
+    --ink:#eef0e6;
+    --ink-soft:#9aa3b5;
+    --gold:#e0a53f;
+    --gold-deep:#f0bc63;
+    --sage:#7fc294;
+    --sage-bg:#1b2b21;
+    --brick:#e88b73;
+    --brick-bg:#332019;
+    --line:#2b3342;
+    --focus:#7fa0e6;
+  }
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;}
+body{
+  background:var(--paper);
+  color:var(--ink);
+  font-family:"IBM Plex Sans",system-ui,sans-serif;
+  line-height:1.5;
+}
+h1,h2,h3{font-family:"Fraunces",Georgia,serif;text-wrap:balance;margin:0;}
+.nums{font-family:"IBM Plex Mono",ui-monospace,monospace;font-variant-numeric:tabular-nums;}
+img{max-width:100%;}
+
+.wrap{max-width:960px; margin-inline:auto; padding-inline:16px;}
+
+a{color:inherit;}
+:focus-visible{outline:2.5px solid var(--focus); outline-offset:2px;}
+
+/* ---- top nav shared across pages ---- */
+header.app-nav{
+  position:sticky; top:0; z-index:30;
+  background:var(--paper);
+  border-bottom:1px solid var(--line);
+  padding-block:14px;
+}
+header.app-nav .row{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+}
+header.app-nav .brand{
+  font-family:"Fraunces",serif; font-weight:700; font-size:1.05rem; text-decoration:none; color:var(--ink);
+  display:flex; align-items:center; gap:8px;
+}
+header.app-nav .brand .dot{width:9px;height:9px;border-radius:50%;background:var(--gold);}
+header.app-nav .crumb{font-size:.82rem; color:var(--ink-soft); text-decoration:none; display:flex; align-items:center; gap:6px;}
+header.app-nav .crumb:hover{color:var(--gold-deep);}
+
+/* ---- shared buttons ---- */
+.btn{
+  display:inline-flex; align-items:center; gap:8px;
+  font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:.9rem;
+  border-radius:9px; padding:11px 18px; cursor:pointer; text-decoration:none;
+  border:1.5px solid transparent;
+}
+.btn-primary{background:var(--ink); color:var(--paper); border-color:var(--ink);}
+.btn-primary:hover{background:var(--gold-deep); border-color:var(--gold-deep);}
+.btn-ghost{background:transparent; color:var(--ink); border-color:var(--line);}
+.btn-ghost:hover{border-color:var(--gold);}
+
+/* ---- shared card ---- */
+.card{
+  background:var(--raised); border:1px solid var(--line); border-radius:14px;
+}

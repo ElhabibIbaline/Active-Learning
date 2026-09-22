@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Active Learning — Préparation DGFiP catégorie C</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="styles/base.css">
+<style>
+  .hero{padding-block:56px 40px;}
+  .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep); font-weight:600;}
+  .hero h1{font-size:clamp(2rem,5vw,2.8rem); margin-block:12px 14px; font-weight:700;}
+  .hero p{color:var(--ink-soft); max-width:60ch; font-size:1.02rem; line-height:1.6; margin-bottom:24px;}
+  .hero-actions{display:flex; gap:12px; flex-wrap:wrap;}
+
+  section{padding-block:36px;}
+  section > h2{font-size:1.4rem; margin-bottom:8px;}
+  section > .lead{color:var(--ink-soft); max-width:62ch; margin-bottom:26px; line-height:1.55;}
+
+  /* ---- démonstration interactive ---- */
+  .demo{background:var(--raised); border:1px solid var(--line); border-radius:16px; padding:24px;}
+  .demo-tabs{display:flex; gap:8px; margin-bottom:18px;}
+  .demo-tab{
+    flex:1; text-align:center; padding:10px 12px; border-radius:9px; cursor:pointer;
+    font-weight:600; font-size:.88rem; border:1.5px solid var(--line); background:var(--paper); color:var(--ink-soft);
+  }
+  .demo-tab.active{border-color:var(--gold); color:var(--gold-deep); background:var(--sage-bg);}
+  .demo-pane{display:none;}
+  .demo-pane.active{display:block;}
+
+  .fiche-classique p{margin:0 0 12px; color:var(--ink); font-size:.96rem; line-height:1.65;}
+  .fiche-classique{background:var(--paper); border:1px dashed var(--line); border-radius:10px; padding:20px;}
+
+  .fiche-interactive{background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:20px; display:flex; flex-direction:column; gap:14px;}
+  .fiche-interactive .q{font-size:.96rem; line-height:1.55;}
+  .fiche-interactive .q b{font-weight:700;}
+  .guess-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .guess-row input{
+    font-family:"IBM Plex Mono",monospace; font-size:1rem; border:1.5px solid var(--line);
+    border-radius:8px; padding:9px 12px; width:11ch; background:var(--raised); color:var(--ink);
+  }
+  .verdict{font-size:.86rem; font-weight:600; border-radius:8px; padding:9px 12px; display:none; align-items:center; gap:8px;}
+  .verdict.show{display:flex;}
+  .verdict.ok{background:var(--sage-bg); color:var(--sage);}
+  .verdict.ko{background:var(--brick-bg); color:var(--brick);}
+  .steps-calc{display:none; flex-direction:column; gap:4px; font-family:"IBM Plex Mono",monospace; font-size:.84rem;}
+  .steps-calc.show{display:flex;}
+  .steps-calc .line{display:flex; justify-content:space-between; gap:12px; border-bottom:1px dotted var(--line); padding-block:3px;}
+  .steps-calc .line.total{font-weight:700; color:var(--ink); border-bottom:none;}
+  .demo-caption{margin-top:16px; font-size:.86rem; color:var(--ink-soft); border-top:1px dashed var(--line); padding-top:14px;}
+  .demo-caption b{color:var(--ink);}
+
+  /* ---- modules ---- */
+  .modules{display:grid; grid-template-columns:1fr; gap:14px;}
+  @media(min-width:640px){ .modules{grid-template-columns:1fr 1fr;} }
+  .module{
+    padding:20px; display:flex; flex-direction:column; gap:8px; text-decoration:none; color:inherit;
+    transition:border-color .15s;
+  }
+  .module .m-num{font-family:"Fraunces",serif; font-weight:900; color:var(--gold); font-size:1.2rem;}
+  .module h3{font-size:1.02rem; font-weight:600;}
+  .module p{margin:0; color:var(--ink-soft); font-size:.88rem; line-height:1.5;}
+  .module .status{font-size:.72rem; font-weight:600; letter-spacing:.04em; text-transform:uppercase; margin-top:4px;}
+  .module.ready{border-color:var(--sage); cursor:pointer;}
+  .module.ready:hover{border-color:var(--gold);}
+  .module.ready .status{color:var(--sage);}
+  .module.soon{opacity:.6; cursor:default;}
+  .module.soon .status{color:var(--ink-soft);}
+
+  footer.note{color:var(--ink-soft); font-size:.78rem; text-align:center; padding-block:24px;}
+</style>
+</head>
+<body>
+
+<header class="app-nav">
+  <div class="wrap row">
+    <span class="brand"><span class="dot"></span> Active Learning</span>
+    <span class="crumb">Préparation DGFiP · catégorie C</span>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="hero">
+    <div class="eyebrow">Apprentissage actif</div>
+    <h1>On ne relit pas ses fiches de révision. On les manipule.</h1>
+    <p>Chaque module de cette app transforme une notion du concours en quelque chose qu'on essaie, qu'on rate, qu'on corrige — plutôt qu'un texte qu'on survole. C'est ce qui fait qu'un souvenir tient.</p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="raisonnement/index.html">Commencer par le raisonnement logique →</a>
+      <a class="btn btn-ghost" href="#demo">Voir la différence</a>
+    </div>
+  </section>
+
+  <section id="demo">
+    <h2>Une même question, deux façons de la revoir</h2>
+    <p class="lead">Le contenu ci-dessous est identique dans les deux onglets. Regarde ce qui change réellement.</p>
+
+    <div class="demo">
+      <div class="demo-tabs">
+        <div class="demo-tab active" id="tab-classique" onclick="showTab('classique')">Fiche classique</div>
+        <div class="demo-tab" id="tab-interactive" onclick="showTab('interactive')">Fiche interactive</div>
+      </div>
+
+      <div class="demo-pane active" id="pane-classique">
+        <div class="fiche-classique">
+          <p><strong>Pourcentages — méthode.</strong> Pour calculer un pourcentage d'un nombre, on décompose en 10 %, 5 % et 1 % plutôt que de poser une multiplication directe.</p>
+          <p><strong>Exemple.</strong> Un service traite 1 240 dossiers. 15 % sont prioritaires. 10 % de 1 240 = 124 (on déplace la virgule). 5 % = la moitié de 124, soit 62. En additionnant 124 et 62, on obtient 186 dossiers prioritaires.</p>
+          <p>À retenir : décomposer un pourcentage en tranches de 10 %, 5 % et 1 % est presque toujours plus rapide qu'une multiplication posée, surtout sans calculatrice.</p>
+        </div>
+      </div>
+
+      <div class="demo-pane" id="pane-interactive">
+        <div class="fiche-interactive">
+          <p class="q">Un service traite <b>1 240</b> dossiers ce mois-ci. <b>15 %</b> sont classés prioritaires. Combien de dossiers sont prioritaires ?</p>
+          <div class="guess-row">
+            <input type="number" id="demo-input" aria-label="Ta réponse" placeholder="?">
+            <button class="btn btn-primary" onclick="checkDemo()">Vérifier</button>
+          </div>
+          <div class="verdict" id="demo-verdict"></div>
+          <div class="steps-calc" id="demo-steps">
+            <div class="line"><span>10 % de 1 240 (on déplace la virgule)</span><span>124</span></div>
+            <div class="line"><span>5 % de 1 240 (moitié de 124)</span><span>62</span></div>
+            <div class="line total"><span>15 % = 124 + 62</span><span>186 dossiers</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="demo-caption">Même méthode, même exemple. Dans la fiche classique, tu <b>lis</b> le calcul déjà fait. Dans la fiche interactive, tu <b>le fais</b> avant de voir la réponse — c'est l'effet de génération : on retient mieux ce qu'on a essayé de produire soi-même.</div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Choisis ton module</h2>
+    <p class="lead">L'app se construit brique par brique. Un seul module est prêt pour l'instant — les autres arrivent au fil des prochaines séances.</p>
+    <div class="modules">
+      <a class="module card ready" href="raisonnement/index.html">
+        <span class="m-num">01</span>
+        <h3>Raisonnement logique</h3>
+        <p>Suites, dominos, matrices : devine avant de voir la règle, dans un palais de mémoire à 5 salles.</p>
+        <span class="status">Prêt →</span>
+      </a>
+      <div class="module card soon">
+        <span class="m-num">02</span>
+        <h3>Calcul &amp; pourcentages</h3>
+        <p>Prochaine brique à construire ensemble.</p>
+        <span class="status">À venir</span>
+      </div>
+      <div class="module card soon">
+        <span class="m-num">03</span>
+        <h3>Culture administrative</h3>
+        <p>DGFiP, statut de la fonction publique, organisation de l'État.</p>
+        <span class="status">À venir</span>
+      </div>
+      <div class="module card soon">
+        <span class="m-num">04</span>
+        <h3>Vocabulaire &amp; orthographe</h3>
+        <p>Les pièges qui reviennent le plus souvent au concours.</p>
+        <span class="status">À venir</span>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer class="note">Active Learning — construit brique par brique, session après session.</footer>
+
+<script>
+  function showTab(name){
+    document.getElementById('tab-classique').classList.toggle('active', name === 'classique');
+    document.getElementById('tab-interactive').classList.toggle('active', name === 'interactive');
+    document.getElementById('pane-classique').classList.toggle('active', name === 'classique');
+    document.getElementById('pane-interactive').classList.toggle('active', name === 'interactive');
+  }
+  function checkDemo(){
+    var input = document.getElementById('demo-input');
+    var val = parseInt(input.value, 10);
+    var ok = val === 186;
+    var verdict = document.getElementById('demo-verdict');
+    verdict.className = 'verdict show ' + (ok ? 'ok' : 'ko');
+    verdict.textContent = ok ? 'Exact — 186 dossiers.' : 'Pas tout à fait. Regarde le détail ci-dessous.';
+    document.getElementById('demo-steps').classList.add('show');
+  }
+</script>
+</body>
+</html>

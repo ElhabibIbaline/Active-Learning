@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vocabulaire &amp; orthographe — Active Learning</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="../styles/base.css">
+<style>
+  body{padding-block:0 40px;}
+
+  .room-top{padding-block:22px 14px; border-bottom:1px solid var(--line);}
+  .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep); font-weight:600;}
+  .room-top h1{font-size:1.3rem; font-weight:600; margin-block:8px 6px;}
+  .room-top p{color:var(--ink-soft); font-size:.9rem; max-width:60ch; margin:0; line-height:1.55;}
+
+  section.wing{padding-block:44px 20px;}
+  .wing-tag{display:flex; align-items:center; gap:10px; margin-bottom:6px;}
+  .wing-icon{width:28px; height:28px; flex:none; color:var(--acc);}
+  .wing-label{font-size:.72rem; letter-spacing:.1em; text-transform:uppercase; font-weight:700; color:var(--acc);}
+  .wing h2{font-size:1.4rem; margin-bottom:8px;}
+  .wing > p.lead{color:var(--ink-soft); max-width:62ch; line-height:1.55; margin-bottom:26px;}
+
+  /* ================= AILE 1 : VOCABULAIRE — mots-clés ================= */
+  .wing-vocab{--acc:var(--gold);}
+  .cards-grid{display:grid; grid-template-columns:1fr; gap:16px;}
+  @media(min-width:640px){ .cards-grid{grid-template-columns:1fr 1fr;} }
+  @media(min-width:960px){ .cards-grid{grid-template-columns:1fr 1fr 1fr;} }
+
+  .flashcard{perspective:1200px; cursor:pointer; min-height:190px;}
+  .flashcard-inner{position:relative; width:100%; height:100%; min-height:190px; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.3,.8,.3,1);}
+  .flashcard.flipped .flashcard-inner{transform:rotateY(180deg);}
+  .flashcard-face{
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:12px; border:1.5px solid var(--line);
+    padding:16px; display:flex; flex-direction:column; justify-content:center; align-items:center; text-align:center; gap:8px;
+    background:var(--raised);
+  }
+  .flashcard-face.front .icon{width:44px; height:44px; color:var(--acc);}
+  .flashcard-face.front .term{font-family:"Fraunces",serif; font-weight:700; font-size:1.15rem;}
+  .flashcard-face.front .hint{font-size:.72rem; color:var(--ink-soft);}
+  .flashcard-face.back{transform:rotateY(180deg); background:var(--paper); align-items:flex-start; text-align:left;}
+  .flashcard-face.back .mnemo-line{font-size:.86rem; font-style:italic; color:var(--acc); line-height:1.4;}
+  .flashcard-face.back .def-line{font-size:.86rem; color:var(--ink); line-height:1.45;}
+  .rate-row{display:flex; gap:8px; margin-top:auto; width:100%;}
+  .rate-btn{
+    flex:1; font-size:.74rem; font-weight:600; border-radius:7px; padding:7px 8px; cursor:pointer;
+    border:1.5px solid var(--line); background:var(--raised); color:var(--ink-soft);
+  }
+  .rate-btn.known{border-color:var(--sage); color:var(--sage);}
+  .rate-btn.review{border-color:var(--brick); color:var(--brick);}
+  .flashcard.state-known .flashcard-face{border-color:var(--sage);}
+  .flashcard.state-review .flashcard-face{border-color:var(--brick);}
+  .recap-line{font-size:.86rem; color:var(--sage); font-weight:600; margin-bottom:16px; display:none;}
+  .recap-line.show{display:block;}
+
+  /* ================= AILE 2 : ORTHOGRAPHE — radar à pièges ================= */
+  .wing-ortho{--acc:var(--brick);}
+  .pieges{display:flex; flex-direction:column; gap:18px;}
+  .piege{background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:18px;}
+  .piege-sentence{
+    position:relative; overflow:hidden; font-size:1.02rem; line-height:1.8; padding:6px 4px;
+  }
+  .piege-sentence .scan{
+    position:absolute; top:0; bottom:0; left:-30%; width:30%;
+    background:linear-gradient(90deg, transparent, color-mix(in srgb, var(--acc) 30%, transparent), transparent);
+    pointer-events:none; opacity:0;
+  }
+  .piege-sentence.scanning .scan{opacity:1; animation:scanmove 1s ease forwards;}
+  @keyframes scanmove{ from{left:-30%;} to{left:100%;} }
+  @media (prefers-reduced-motion: reduce){ .piege-sentence.scanning .scan{animation:none; opacity:0;} }
+
+  .choice{
+    display:inline-flex; border:1.5px solid var(--line); background:var(--paper); color:var(--ink);
+    border-radius:6px; padding:2px 10px; margin:0 3px; cursor:pointer; font-weight:600;
+    font-family:"IBM Plex Mono",monospace; font-size:.95rem; transition:border-color .15s, background .15s;
+  }
+  .choice:hover{border-color:var(--acc);}
+  .choice.picked{border-color:var(--focus); background:color-mix(in srgb, var(--focus) 12%, var(--paper));}
+  .choice.correct{border-color:var(--sage); background:var(--sage-bg); color:var(--sage);}
+  .choice.wrong{border-color:var(--brick); background:var(--brick-bg); color:var(--brick); text-decoration:line-through;}
+  .choice[disabled]{cursor:default;}
+
+  .piege-reveal{display:none; margin-top:12px; padding-top:12px; border-top:1px dashed var(--line); font-size:.86rem; color:var(--ink-soft); line-height:1.55;}
+  .piege-reveal.show{display:block;}
+  .piege-reveal b{color:var(--ink);}
+  .contrast-row{display:flex; gap:14px; margin-bottom:8px; flex-wrap:wrap; font-family:"IBM Plex Mono",monospace; font-size:.9rem;}
+  .contrast-row .no{color:var(--brick); text-decoration:line-through;}
+  .contrast-row .yes{color:var(--sage); font-weight:700;}
+
+  .piege-status{font-size:.72rem; font-weight:700; text-transform:uppercase; letter-spacing:.05em; margin-left:8px;}
+  .piege-status.ok{color:var(--sage);}
+  .piege-status.ko{color:var(--brick);}
+
+  details.meta{background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin-block:30px 8px;}
+  details.meta summary{cursor:pointer; font-weight:600; font-size:.92rem; color:var(--ink);}
+  .meta-grid{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .meta-row{display:flex; gap:10px; font-size:.84rem; color:var(--ink-soft); line-height:1.5;}
+  .meta-row b{color:var(--gold-deep); font-family:"IBM Plex Mono",monospace; font-weight:600; flex:none; min-width:16ch;}
+
+  footer.note{color:var(--ink-soft); font-size:.76rem; text-align:center; padding-block:18px 4px;}
+</style>
+</head>
+<body>
+
+<header class="app-nav">
+  <div class="wrap row">
+    <a class="brand" href="../index.html"><span class="dot"></span> Active Learning</a>
+    <a class="crumb" href="../index.html">← Accueil</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <header class="room-top">
+    <div class="eyebrow">Module 04 · Atelier des mots</div>
+    <h1>L'Atelier des Mots — vocabulaire &amp; orthographe</h1>
+    <p>Deux ailes, deux méthodes différentes parce que ce ne sont pas les mêmes souvenirs à fabriquer : une image mentale pour un mot technique, un contraste visuel pour une règle d'accord.</p>
+  </header>
+
+  <!-- AILE 1 : VOCABULAIRE -->
+  <section class="wing wing-vocab">
+    <div class="wing-tag">
+      <svg class="wing-icon" viewBox="0 0 28 28" fill="none"><path d="M4 14c4-6 16-6 20 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="14" r="3" fill="currentColor"/></svg>
+      <span class="wing-label">Aile Ouest</span>
+    </div>
+    <h2>Le Mot Juste</h2>
+    <p class="lead">Un terme administratif se retient mal comme une simple définition. La méthode des mots-clés fonctionne mieux : associer le mot à une image mentale précise, quitte à ce qu'elle soit un peu bizarre — plus une image est insolite, mieux elle reste en mémoire. Retourne chaque carte, essaie de deviner avant de lire.</p>
+    <div class="recap-line" id="recap-vocab"></div>
+    <div class="cards-grid" id="vocab-grid"></div>
+  </section>
+
+  <!-- AILE 2 : ORTHOGRAPHE -->
+  <section class="wing wing-ortho">
+    <div class="wing-tag">
+      <svg class="wing-icon" viewBox="0 0 28 28" fill="none"><circle cx="14" cy="14" r="10" stroke="currentColor" stroke-width="1.8"/><line x1="21" y1="21" x2="26" y2="26" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="14" cy="14" r="3" fill="currentColor"/></svg>
+      <span class="wing-label">Aile Est</span>
+    </div>
+    <h2>Le Radar à Pièges</h2>
+    <p class="lead">Les fautes les plus fréquentes au concours reviennent presque toujours sur les mêmes pièges. Choisis la bonne forme : le radar balaie la phrase et révèle l'erreur à côté de la bonne réponse, pour que ton œil apprenne à distinguer les deux.</p>
+    <div class="pieges" id="pieges-list"></div>
+  </section>
+
+  <details class="meta">
+    <summary>Pourquoi ces deux méthodes, et pas les salles habituelles</summary>
+    <div class="meta-grid">
+      <div class="meta-row"><b>Mots-clés + imagerie</b> Un mot abstrait se retient mieux collé à une image concrète et légèrement insolite qu'à une définition sèche — c'est la méthode des mots-clés, validée pour l'apprentissage du vocabulaire.</div>
+      <div class="meta-row"><b>Contraste erreur/correction</b> Voir la faute barrée juste à côté de la bonne forme muscle la capacité à distinguer les deux, plus qu'une règle apprise seule.</div>
+      <div class="meta-row"><b>Signal visuel d'attention</b> Le radar qui balaie la phrase dirige l'œil précisément sur le mot piégeux au moment où ça compte le plus pour la mémoire.</div>
+      <div class="meta-row"><b>Effet de génération</b> Toujours choisir avant de voir la correction.</div>
+      <div class="meta-row"><b>Répétition espacée</b> Les cartes de vocabulaire s'auto-évaluent et gardent la trace de ce qui reste à revoir.</div>
+    </div>
+  </details>
+
+  <footer class="note">Active Learning — module vocabulaire &amp; orthographe.</footer>
+</div>
+
+<script src="../js/effects.js"></script>
+<script>
+(function(){
+  // ============ AILE 1 : VOCABULAIRE ============
+  var VOCAB_KEY = 'active-learning-vocab-v1';
+  function loadVocab(){ try{ var raw = localStorage.getItem(VOCAB_KEY); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+  function saveVocab(s){ try{ localStorage.setItem(VOCAB_KEY, JSON.stringify(s)); }catch(e){} }
+  var vocabState = loadVocab();
+
+  var TERMS = [
+    {
+      id:'v1', term:'Contribuable',
+      icon:'<svg viewBox="0 0 44 44" fill="none"><rect x="6" y="30" width="32" height="6" rx="1.5" fill="currentColor"/><circle cx="22" cy="16" r="7" stroke="currentColor" stroke-width="2"/><path d="M22 23v6" stroke="currentColor" stroke-width="2"/></svg>',
+      mnemo:"Imagine quelqu'un qui pose sa pièce sur la table commune : il « contribue » à la caisse de tous.",
+      def:'Personne physique ou morale qui doit payer un impôt.'
+    },
+    {
+      id:'v2', term:'TVA',
+      icon:'<svg viewBox="0 0 44 44" fill="none"><path d="M10 12h18l6 8-6 8H10z" stroke="currentColor" stroke-width="2"/><text x="19" y="26" font-size="9" fill="currentColor" font-family="monospace">+</text></svg>',
+      mnemo:"Un prix qui grandit discrètement à chaque étape, avant d'arriver à la caisse — invisible, mais toujours là.",
+      def:"Taxe sur la Valeur Ajoutée : impôt indirect sur la consommation, payé par l'acheteur et déjà inclus dans le prix affiché."
+    },
+    {
+      id:'v3', term:'Cadastre',
+      icon:'<svg viewBox="0 0 44 44" fill="none"><rect x="6" y="6" width="32" height="32" stroke="currentColor" stroke-width="1.8"/><line x1="6" y1="17" x2="38" y2="17" stroke="currentColor" stroke-width="1.4"/><line x1="6" y1="28" x2="38" y2="28" stroke="currentColor" stroke-width="1.4"/><line x1="17" y1="6" x2="17" y2="38" stroke="currentColor" stroke-width="1.4"/><line x1="28" y1="6" x2="28" y2="38" stroke="currentColor" stroke-width="1.4"/></svg>',
+      mnemo:"Un immense quadrillage posé sur toute la commune : chaque parcelle a sa case, aucune ne se perd.",
+      def:"Registre officiel qui recense et délimite toutes les propriétés foncières d'un territoire."
+    },
+    {
+      id:'v4', term:'Recouvrement',
+      icon:'<svg viewBox="0 0 44 44" fill="none"><path d="M6 14c8 10 24 10 32 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M6 14l4 16M38 14l-4 16" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="22" cy="30" r="3" fill="currentColor"/></svg>',
+      mnemo:"Un filet lancé qui « recouvre » l'argent dû et le ramène vers l'administration.",
+      def:"Action de percevoir une somme due (un impôt, une amende) qui n'a pas encore été payée."
+    },
+    {
+      id:'v5', term:'Dégrèvement',
+      icon:'<svg viewBox="0 0 44 44" fill="none"><line x1="22" y1="6" x2="22" y2="34" stroke="currentColor" stroke-width="1.8"/><line x1="10" y1="14" x2="34" y2="14" stroke="currentColor" stroke-width="1.8"/><path d="M10 14l-4 8h8l-4-8z" stroke="currentColor" stroke-width="1.4"/><path d="M34 14l-4 8h8l-4-8z" stroke="currentColor" stroke-width="1.4"/><path d="M22 34l-6 4h12l-6-4z" fill="currentColor"/></svg>',
+      mnemo:"Le poids de l'impôt qu'on soulève de la balance — « dé-grève » comme on déleste.",
+      def:"Réduction ou annulation, totale ou partielle, d'un impôt normalement dû."
+    },
+    {
+      id:'v6', term:'Prélèvement à la source',
+      icon:'<svg viewBox="0 0 44 44" fill="none"><path d="M10 8c0 10 24 10 24 20" stroke="currentColor" stroke-width="1.8" fill="none"/><line x1="6" y1="14" x2="14" y2="14" stroke="currentColor" stroke-width="2"/></svg>',
+      mnemo:"Un filtre posé tout en amont de la rivière : une partie de l'eau — le salaire — est retenue avant même de couler plus loin.",
+      def:"L'impôt sur le revenu est directement retenu sur le salaire, avant que celui-ci ne soit versé."
+    }
+  ];
+
+  var vocabGrid = document.getElementById('vocab-grid');
+  TERMS.forEach(function(t){
+    var card = document.createElement('div');
+    card.className = 'flashcard';
+    card.id = 'vcard-' + t.id;
+    card.innerHTML =
+      '<div class="flashcard-inner">' +
+        '<div class="flashcard-face front"><span class="icon">' + t.icon + '</span><span class="term">' + t.term + '</span><span class="hint">Clique pour l\'image mentale</span></div>' +
+        '<div class="flashcard-face back">' +
+          '<span class="mnemo-line">' + t.mnemo + '</span>' +
+          '<span class="def-line">' + t.def + '</span>' +
+          '<div class="rate-row" data-noflip>' +
+            '<button class="rate-btn known" data-noflip onclick="rateVocab(event,\'' + t.id + '\',true)">Je savais</button>' +
+            '<button class="rate-btn review" data-noflip onclick="rateVocab(event,\'' + t.id + '\',false)">À revoir</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>';
+    card.addEventListener('click', function(ev){
+      if(ev.target.closest('[data-noflip]')) return;
+      card.classList.toggle('flipped');
+    });
+    vocabGrid.appendChild(card);
+    applyVocabState(t.id);
+  });
+
+  function applyVocabState(id){
+    var card = document.getElementById('vcard-' + id);
+    card.classList.remove('state-known', 'state-review');
+    if(vocabState[id] === 'known') card.classList.add('state-known');
+    if(vocabState[id] === 'review') card.classList.add('state-review');
+  }
+  function updateVocabRecap(){
+    var known = TERMS.filter(function(t){ return vocabState[t.id] === 'known'; }).length;
+    var el = document.getElementById('recap-vocab');
+    if(known > 0){ el.textContent = known + ' / ' + TERMS.length + ' mots déjà sus.'; el.classList.add('show'); }
+  }
+  window.rateVocab = function(ev, id, known){
+    vocabState[id] = known ? 'known' : 'review';
+    saveVocab(vocabState);
+    applyVocabState(id);
+    updateVocabRecap();
+    if(known){
+      var rect = ev.target.getBoundingClientRect();
+      AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);
+    }
+  };
+  updateVocabRecap();
+
+  // ============ AILE 2 : ORTHOGRAPHE ============
+  var PIEGES = [
+    {
+      id:'p1',
+      before:'Les erreurs qu\'il a', after:'étaient nombreuses.',
+      choices:['commis','commises'], correct:1,
+      rule:"Le COD « que » (= les erreurs, féminin pluriel) est placé avant l'auxiliaire avoir : le participe passé s'accorde avec lui."
+    },
+    {
+      id:'p2',
+      before:'Il a oublié', after:'clés chez lui.',
+      choices:['ses','ces'], correct:0,
+      rule:'« Ses » est un possessif (= à lui) ; « ces » est un démonstratif. Les clés lui appartiennent : c\'est « ses ».'
+    },
+    {
+      id:'p3',
+      before:'', after:'à moi, je ne viendrai pas.',
+      choices:['Quand','Quant'], correct:1,
+      rule:'« Quant à » signifie « en ce qui concerne ». « Quand » ne s\'utilise que pour le temps.'
+    },
+    {
+      id:'p4',
+      before:'Le magasin est', after:'le lundi.',
+      choices:['fermer','fermé'], correct:1,
+      rule:'Accord avec « magasin » (masculin singulier) : c\'est un adjectif, pas un infinitif.'
+    },
+    {
+      id:'p5',
+      before:'Ils se sont', after:'au téléphone toute la soirée.',
+      choices:['parlés','parlé'], correct:1,
+      rule:'On parle À quelqu\'un : « se » est un COI, pas un COD. Le participe reste invariable : « parlé ».'
+    }
+  ];
+
+  var piegesList = document.getElementById('pieges-list');
+  PIEGES.forEach(function(p){
+    var wrap = document.createElement('div');
+    wrap.className = 'piege';
+    var choicesHtml = p.choices.map(function(c, i){
+      return '<span class="choice" data-idx="' + i + '" onclick="pickPiege(event,\'' + p.id + '\',' + i + ')">' + c + '</span>';
+    }).join(' / ');
+    wrap.innerHTML =
+      '<div class="piege-sentence" id="sentence-' + p.id + '"><span class="scan"></span>' + p.before + ' ' + choicesHtml + ' ' + p.after +
+        '<span class="piege-status" id="status-' + p.id + '"></span></div>' +
+      '<div class="piege-reveal" id="reveal-' + p.id + '">' +
+        '<div class="contrast-row"><span class="no">' + p.choices[1 - p.correct] + '</span><span class="yes">' + p.choices[p.correct] + '</span></div>' +
+        p.rule +
+      '</div>';
+    piegesList.appendChild(wrap);
+  });
+
+  window.pickPiege = function(ev, id, idx){
+    var pData = PIEGES.filter(function(p){ return p.id === id; })[0];
+    var sentence = document.getElementById('sentence-' + id);
+    var reveal = document.getElementById('reveal-' + id);
+    var status = document.getElementById('status-' + id);
+    var choices = sentence.querySelectorAll('.choice');
+    var ok = idx === pData.correct;
+
+    choices.forEach(function(c, i){
+      c.setAttribute('disabled', 'true');
+      if(i === idx) c.classList.add('picked');
+      if(i === pData.correct) c.classList.add('correct');
+      else c.classList.add('wrong');
+    });
+
+    sentence.classList.add('scanning');
+    reveal.classList.add('show');
+    status.textContent = ok ? 'Exact' : 'À revoir';
+    status.className = 'piege-status ' + (ok ? 'ok' : 'ko');
+    if(ok){
+      var rect = ev.target.getBoundingClientRect();
+      AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);
+    }
+  };
+})();
+</script>
+</body>
+</html>

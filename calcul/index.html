@@ -1,0 +1,565 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calcul — Active Learning</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="../styles/base.css">
+<style>
+  body{padding-block:0 32px;}
+
+  .room-top{padding-block:22px 10px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px;}
+  .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--gold-deep); font-weight:600;}
+  .room-top h1{font-size:1.3rem; font-weight:600;}
+  nav.doors{display:flex; gap:8px; flex-wrap:wrap;}
+  .door-dot{
+    display:flex; align-items:center; gap:6px;
+    border:1.5px solid var(--line); background:var(--raised);
+    color:var(--ink-soft); border-radius:999px;
+    padding:5px 10px 5px 6px; font-size:.72rem; font-weight:600;
+    cursor:pointer; font-family:"IBM Plex Mono",monospace;
+    transition:border-color .15s, color .15s, background .15s;
+  }
+  .door-dot .n{
+    width:18px;height:18px;border-radius:50%;
+    display:flex;align-items:center;justify-content:center;
+    background:var(--line); color:var(--paper); font-size:.65rem;
+  }
+  .door-dot[data-state="mastered"]{border-color:var(--sage); color:var(--sage);}
+  .door-dot[data-state="mastered"] .n{background:var(--sage); color:var(--raised);}
+  .door-dot[data-state="weak"]{border-color:var(--brick); color:var(--brick);}
+  .door-dot[data-state="weak"] .n{background:var(--brick); color:var(--raised);}
+  .door-dot:hover{border-color:var(--focus);}
+
+  .intro{padding-block:22px 8px;}
+  .intro p{color:var(--ink-soft); max-width:60ch; line-height:1.55;}
+
+  .room{
+    background:var(--raised); border:1px solid var(--line);
+    border-radius:14px; margin-block:18px; padding:22px;
+    scroll-margin-top:70px;
+    display:grid; grid-template-columns:1fr; gap:18px;
+  }
+  @media(min-width:680px){
+    .room{grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); gap:26px;}
+  }
+  .room-head{display:flex; align-items:center; gap:12px; margin-bottom:10px;}
+  .door-num{font-family:"Fraunces",serif; font-weight:900; font-size:1.6rem; color:var(--gold); line-height:1; min-width:2.2ch;}
+  .room-icon{color:var(--gold); flex:none;}
+  .room h2{font-size:1.15rem; font-weight:600;}
+  .rule{color:var(--ink-soft); font-size:.92rem; line-height:1.55; margin-block:8px 14px;}
+  .rule strong{color:var(--ink); font-weight:600;}
+  .mnemo{
+    background:var(--sage-bg); border:1px solid var(--sage); color:var(--sage);
+    border-radius:8px; padding:8px 12px; font-size:.82rem; line-height:1.4;
+    display:flex; gap:8px; align-items:flex-start;
+  }
+  .mnemo svg{flex:none; margin-top:2px;}
+
+  .lab{
+    background:var(--paper); border:1px solid var(--line); border-radius:10px;
+    padding:16px; display:flex; flex-direction:column; gap:14px;
+  }
+  .guess-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  input[type="text"], input[type="number"]{
+    font-family:"IBM Plex Mono",monospace; font-size:1rem;
+    border:1.5px solid var(--line); border-radius:8px;
+    padding:9px 12px; width:9ch; background:var(--raised); color:var(--ink);
+  }
+  button.go{
+    font-family:"IBM Plex Sans",sans-serif; font-weight:600; font-size:.88rem;
+    background:var(--ink); color:var(--paper); border:none;
+    border-radius:8px; padding:9px 16px; cursor:pointer;
+  }
+  button.go:hover{background:var(--gold-deep);}
+  .verdict{font-size:.86rem; font-weight:600; border-radius:8px; padding:9px 12px; display:none; align-items:center; gap:8px;}
+  .verdict.show{display:flex;}
+  .verdict.ok{background:var(--sage-bg); color:var(--sage);}
+  .verdict.ko{background:var(--brick-bg); color:var(--brick);}
+  .reveal{display:none; border-top:1px dashed var(--line); padding-top:12px; font-size:.86rem; color:var(--ink-soft); line-height:1.55;}
+  .reveal.show{display:block;}
+  .reveal b{color:var(--ink);}
+  .steps-calc{display:flex; flex-direction:column; gap:4px; font-family:"IBM Plex Mono",monospace; font-size:.82rem; margin-top:10px;}
+  .steps-calc .line{display:flex; justify-content:space-between; gap:12px; border-bottom:1px dotted var(--line); padding-block:3px;}
+  .steps-calc .line.total{font-weight:700; color:var(--ink); border-bottom:none;}
+
+  /* --- placard (tiroir bonus) --- */
+  .placard-btn{
+    display:flex; align-items:center; gap:8px; background:none; border:1px dashed var(--line);
+    color:var(--ink-soft); border-radius:8px; padding:8px 12px; font-size:.8rem; font-weight:600;
+    cursor:pointer; text-align:left; font-family:"IBM Plex Sans",sans-serif;
+  }
+  .placard-btn:hover{border-color:var(--gold); color:var(--gold-deep);}
+  .placard-btn svg{flex:none; transition:transform .2s;}
+  .placard-btn.open svg{transform:rotate(45deg);}
+  .placard-content{
+    max-height:0; overflow:hidden; opacity:0; transition:max-height .3s ease, opacity .25s ease;
+    font-size:.84rem; color:var(--ink-soft); line-height:1.5; background:var(--raised);
+    border-radius:8px;
+  }
+  .placard-content.open{max-height:200px; opacity:1; padding:12px 14px; border:1px solid var(--line);}
+
+  /* --- salle 1 : expression animée --- */
+  .expr{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-size:1.1rem; font-weight:600;}
+  .tok{
+    background:var(--raised); border:1px solid var(--line); border-radius:8px;
+    padding:8px 12px; font-family:"IBM Plex Mono",monospace; transition:box-shadow .3s, background .3s, color .3s;
+  }
+  .tok.op{background:transparent; border:none; color:var(--ink-soft); padding:0; font-weight:400;}
+  .tok.qmark{border:1.5px dashed var(--gold); color:var(--gold-deep);}
+  .tok.hi{background:var(--sage-bg); color:var(--sage); box-shadow:0 0 0 3px var(--sage-bg);}
+  .result-line{font-family:"IBM Plex Mono",monospace; font-size:1.4rem; font-weight:700; color:var(--gold); min-height:1.6em;}
+
+  /* --- salle 2 : balance --- */
+  .balance-wrap{display:flex; justify-content:center; padding-block:6px;}
+  .balance-beam{transform-origin:100px 40px; transition:transform 1s cubic-bezier(.34,1.4,.4,1);}
+  .balance-beam.tilt{transform:rotate(-7deg);}
+  .balance-label{font-family:"IBM Plex Mono",monospace; font-size:.68rem; fill:var(--ink-soft);}
+
+  /* --- salle 3 : produit en croix --- */
+  .cross-grid{position:relative; display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:260px;}
+  .cross-cell{
+    background:var(--raised); border:1px solid var(--line); border-radius:8px;
+    padding:14px; text-align:center; font-family:"IBM Plex Mono",monospace; font-weight:700; z-index:1;
+  }
+  .cross-svg{position:absolute; inset:0; width:100%; height:100%; pointer-events:none;}
+  .cross-line{stroke:var(--gold); stroke-width:2.2; stroke-dasharray:210; stroke-dashoffset:210; transition:stroke-dashoffset 1s ease;}
+  .cross-line.show{stroke-dashoffset:0;}
+
+  /* --- salle 4 : règle de conversion --- */
+  .ruler{position:relative; height:64px; margin-block:10px;}
+  .ruler-track{position:absolute; left:0; right:0; top:28px; height:3px; background:var(--line); border-radius:2px;}
+  .ruler-tick{position:absolute; top:20px; width:1px; height:18px; background:var(--line);}
+  .ruler-tick span{position:absolute; top:20px; left:50%; transform:translateX(-50%); font-size:.68rem; color:var(--ink-soft); font-family:"IBM Plex Mono",monospace;}
+  .ruler-marker{
+    position:absolute; top:12px; width:14px; height:14px; border-radius:50%;
+    background:var(--gold); left:0; transform:translateX(-50%);
+    transition:left 1s cubic-bezier(.3,1.3,.4,1);
+    box-shadow:0 0 0 4px var(--sage-bg);
+  }
+  .ruler-marker-label{
+    position:absolute; top:-22px; left:0; transform:translateX(-50%);
+    font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:.78rem; color:var(--gold-deep);
+    transition:left 1s cubic-bezier(.3,1.3,.4,1); white-space:nowrap;
+  }
+
+  /* --- salle 5 : périmètre dessiné --- */
+  .perim-svg rect{fill:none; stroke:var(--line); stroke-width:2;}
+  .perim-svg rect.draw{stroke:var(--gold); stroke-dasharray:340; stroke-dashoffset:340; transition:stroke-dashoffset 1.4s ease;}
+  .perim-svg rect.draw.show{stroke-dashoffset:0;}
+  .perim-svg text{font-family:"IBM Plex Mono",monospace; font-size:11px; fill:var(--ink-soft);}
+
+  .revision{background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:22px; margin-block:26px;}
+  .revision h2{font-size:1.1rem; margin-bottom:6px;}
+  .revision p{color:var(--ink-soft); font-size:.88rem; line-height:1.5; max-width:60ch;}
+  .weak-list{display:flex; flex-direction:column; gap:8px; margin-block:14px;}
+  .weak-item{display:flex; justify-content:space-between; align-items:center; background:var(--paper); border:1px solid var(--line); border-radius:8px; padding:9px 12px; font-size:.86rem;}
+  .weak-item button{background:none; border:1px solid var(--gold); color:var(--gold-deep); border-radius:6px; padding:4px 10px; font-size:.76rem; cursor:pointer; font-weight:600;}
+  .all-done{color:var(--sage); font-weight:600; font-size:.9rem;}
+
+  details.meta{background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin-block:20px 8px;}
+  details.meta summary{cursor:pointer; font-weight:600; font-size:.92rem; color:var(--ink);}
+  .meta-grid{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .meta-row{display:flex; gap:10px; font-size:.84rem; color:var(--ink-soft); line-height:1.5;}
+  .meta-row b{color:var(--gold-deep); font-family:"IBM Plex Mono",monospace; font-weight:600; flex:none; min-width:15ch;}
+
+  footer.note{color:var(--ink-soft); font-size:.76rem; text-align:center; padding-block:18px 4px;}
+</style>
+</head>
+<body>
+
+<header class="app-nav">
+  <div class="wrap row">
+    <a class="brand" href="../index.html"><span class="dot"></span> Active Learning</a>
+    <a class="crumb" href="../index.html">← Accueil</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <header class="room-top">
+    <div class="eyebrow">Module 02 · Palais de mémoire</div>
+    <h1>Le Palais des Calculs — priorités, %, proportions, conversions, géométrie</h1>
+    <nav class="doors" id="doors" aria-label="Salles du palais">
+      <button class="door-dot" data-room="1" onclick="goRoom(1)"><span class="n">1</span> Priorités</button>
+      <button class="door-dot" data-room="2" onclick="goRoom(2)"><span class="n">2</span> % successifs</button>
+      <button class="door-dot" data-room="3" onclick="goRoom(3)"><span class="n">3</span> Règle de 3</button>
+      <button class="door-dot" data-room="4" onclick="goRoom(4)"><span class="n">4</span> Conversions</button>
+      <button class="door-dot" data-room="5" onclick="goRoom(5)"><span class="n">5</span> Périmètres</button>
+    </nav>
+  </header>
+
+  <section class="intro">
+    <p>Même palais, cinq nouvelles salles. Chacune a son placard : un tiroir à ouvrir pour une astuce en plus, sans surcharger la salle principale. Devine avant de regarder — c'est toujours l'effet de génération qui fait tenir l'info.</p>
+  </section>
+
+  <!-- ROOM 1 : priorités opératoires -->
+  <article class="room" id="room-1">
+    <div>
+      <div class="room-head">
+        <span class="door-num">01</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><path d="M4 13h18M13 4v18" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="13" cy="13" r="10.5" stroke="currentColor" stroke-width="1.6"/></svg>
+        <h2>Priorités opératoires</h2>
+      </div>
+      <p class="rule">Multiplications et divisions <strong>avant</strong> additions et soustractions. Les parenthèses passent toujours en premier.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Repère d'abord le × ou le ÷ dans l'expression : c'est lui qui se calcule en premier, quelle que soit sa position.
+      </p>
+      <button class="placard-btn" id="placard-btn-1" onclick="togglePlacard(1)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — l'astuce de la table de 9
+      </button>
+      <div class="placard-content" id="placard-1">Pour ×9 avec un chiffre de 1 à 10 : lève tes 10 doigts, baisse le doigt du rang du chiffre (ex : ×4 → baisse le 4e doigt). Les doigts à gauche donnent les dizaines, ceux à droite les unités. 9×4 : 3 doigts à gauche, 6 à droite → 36.</div>
+    </div>
+    <div class="lab">
+      <div class="expr" id="expr-1">
+        <span class="tok" id="tok-a">7</span>
+        <span class="tok op">×</span>
+        <span class="tok" id="tok-b">8</span>
+        <span class="tok op">−</span>
+        <span class="tok" id="tok-c">12</span>
+        <span class="tok op">=</span>
+        <span class="tok qmark">?</span>
+      </div>
+      <div class="guess-row">
+        <input type="number" id="r1-input" aria-label="Résultat de 7×8−12" placeholder="?">
+        <button class="go" onclick="check1(event)">Vérifier</button>
+      </div>
+      <div class="verdict" id="r1-verdict"></div>
+      <div class="reveal" id="r1-reveal">
+        <div class="result-line" id="r1-result"></div>
+        La priorité va à ×  : 7 × 8 = <b>56</b>, puis 56 − 12 = <b>44</b>.
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 2 : pourcentages successifs -->
+  <article class="room" id="room-2">
+    <div>
+      <div class="room-head">
+        <span class="door-num">02</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="7" cy="7" r="4" stroke="currentColor" stroke-width="1.6"/><circle cx="19" cy="19" r="4" stroke="currentColor" stroke-width="1.6"/><line x1="21" y1="4" x2="5" y2="22" stroke="currentColor" stroke-width="1.6"/></svg>
+        <h2>Pourcentages successifs</h2>
+      </div>
+      <p class="rule">Une hausse puis une baisse du <strong>même pourcentage</strong> ne ramène jamais au prix de départ : la seconde variation s'applique à un nombre différent.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        La balance ne revient jamais à plat : +8 % puis −8 % laisse toujours un peu moins qu'au départ.
+      </p>
+      <button class="placard-btn" id="placard-btn-2" onclick="togglePlacard(2)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — la méthode 10 + 5 + 1
+      </button>
+      <div class="placard-content" id="placard-2">10 % = on déplace la virgule d'un rang. 5 % = la moitié de 10 %. 1 % = un dixième de 10 %. En combinant ces trois briques, on obtient n'importe quel pourcentage courant sans calculatrice.</div>
+    </div>
+    <div class="lab">
+      <svg class="balance-wrap" width="220" height="90" viewBox="0 0 200 90">
+        <line x1="100" y1="40" x2="100" y2="80" stroke="var(--line)" stroke-width="4"/>
+        <polygon points="90,80 110,80 100,68" fill="var(--line)"/>
+        <g class="balance-beam" id="balance-beam">
+          <line x1="20" y1="40" x2="180" y2="40" stroke="var(--ink-soft)" stroke-width="3"/>
+          <line x1="20" y1="40" x2="20" y2="58" stroke="var(--ink-soft)" stroke-width="2"/>
+          <rect x="4" y="58" width="32" height="10" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="20" y="65" text-anchor="middle" class="balance-label">150 €</text>
+          <line x1="180" y1="40" x2="180" y2="58" stroke="var(--ink-soft)" stroke-width="2"/>
+          <rect x="164" y="58" width="32" height="10" rx="2" fill="var(--paper)" stroke="var(--line)"/>
+          <text x="180" y="65" text-anchor="middle" class="balance-label" id="balance-right-label">149,04 €</text>
+        </g>
+      </svg>
+      <p style="margin:0; font-size:.9rem;">Un article à <b>150 €</b> subit une hausse de <b>8 %</b> puis une baisse de <b>8 %</b>. Prix final ?</p>
+      <div class="guess-row">
+        <input type="text" id="r2-input" aria-label="Prix final en euros" placeholder="?">
+        <button class="go" onclick="check2(event)">Vérifier</button>
+      </div>
+      <div class="verdict" id="r2-verdict"></div>
+      <div class="reveal" id="r2-reveal">
+        <div class="steps-calc">
+          <div class="line"><span>150 × 1,08 (hausse de 8 %)</span><span>162 €</span></div>
+          <div class="line total"><span>162 × 0,92 (baisse de 8 %)</span><span>149,04 €</span></div>
+        </div>
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 3 : règle de trois -->
+  <article class="room" id="room-3">
+    <div>
+      <div class="room-head">
+        <span class="door-num">03</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="2" y="2" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="15" y="2" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="2" y="15" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6"/><rect x="15" y="15" width="9" height="9" rx="1.5" stroke="currentColor" stroke-width="1.6" stroke-dasharray="3 2"/></svg>
+        <h2>Règle de trois</h2>
+      </div>
+      <p class="rule">On multiplie en <strong>diagonale</strong> (produit en croix), puis on divise par le nombre restant.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Dessine la croix mentalement : elle relie toujours les deux nombres connus au nombre cherché.
+      </p>
+      <button class="placard-btn" id="placard-btn-3" onclick="togglePlacard(3)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — le piège du "pas toujours proportionnel"
+      </button>
+      <div class="placard-content" id="placard-3">Un forfait avec une partie fixe (ex : abonnement + prix à l'unité) n'est pas proportionnel : doubler la quantité ne double pas le prix total, à cause de la partie fixe. Vérifie toujours qu'il n'y a pas de coût de départ avant d'appliquer une règle de trois.</div>
+    </div>
+    <div class="lab">
+      <div class="cross-grid" id="cross-grid">
+        <div class="cross-cell">5 dossiers</div>
+        <div class="cross-cell">2 heures</div>
+        <div class="cross-cell">? dossiers</div>
+        <div class="cross-cell">6 heures</div>
+        <svg class="cross-svg" viewBox="0 0 100 100" preserveAspectRatio="none">
+          <line class="cross-line" id="cross-1" x1="5" y1="5" x2="95" y2="95"/>
+          <line class="cross-line" id="cross-2" x1="95" y1="5" x2="5" y2="95"/>
+        </svg>
+      </div>
+      <p style="margin:0; font-size:.9rem;">5 dossiers sont traités en 2 heures. Combien en 6 heures, au même rythme ?</p>
+      <div class="guess-row">
+        <input type="number" id="r3-input" aria-label="Nombre de dossiers" placeholder="?">
+        <button class="go" onclick="check3(event)">Vérifier</button>
+      </div>
+      <div class="verdict" id="r3-verdict"></div>
+      <div class="reveal" id="r3-reveal">
+        (6 × 5) ÷ 2 = <b>15 dossiers</b>. On multiplie en croix (6 et 5), puis on divise par le nombre restant (2).
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 4 : conversions -->
+  <article class="room" id="room-4">
+    <div>
+      <div class="room-head">
+        <span class="door-num">04</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><circle cx="13" cy="13" r="10.5" stroke="currentColor" stroke-width="1.6"/><path d="M13 7v6l4 3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <h2>Conversions de temps</h2>
+      </div>
+      <p class="rule">Convertir, c'est changer d'unité <strong>sans changer la quantité réelle</strong>. Pour les heures : 1 h = 60 min.</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Sépare toujours la partie entière (les heures) de la partie décimale (les minutes) avant de convertir.
+      </p>
+      <button class="placard-btn" id="placard-btn-4" onclick="togglePlacard(4)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — conversions de surfaces
+      </button>
+      <div class="placard-content" id="placard-4">1 m² = 10 000 cm² (pas 100 !). En passant d'une unité de surface à l'unité juste en dessous, on multiplie par 100 — parce qu'une surface a deux dimensions (10 × 10), contrairement à une longueur où l'on multiplie par 10.</div>
+    </div>
+    <div class="lab">
+      <div class="ruler" id="ruler">
+        <div class="ruler-track"></div>
+        <div class="ruler-tick" style="left:0%"><span>0 min</span></div>
+        <div class="ruler-tick" style="left:33%"><span>60</span></div>
+        <div class="ruler-tick" style="left:66%"><span>120</span></div>
+        <div class="ruler-tick" style="left:100%"><span>180</span></div>
+        <div class="ruler-marker" id="ruler-marker" style="left:0%"></div>
+        <div class="ruler-marker-label" id="ruler-label" style="left:0%"></div>
+      </div>
+      <p style="margin:0; font-size:.9rem;">Convertis <b>2 h 15</b> en minutes.</p>
+      <div class="guess-row">
+        <input type="number" id="r4-input" aria-label="Nombre de minutes" placeholder="?">
+        <button class="go" onclick="check4(event)">Vérifier</button>
+      </div>
+      <div class="verdict" id="r4-verdict"></div>
+      <div class="reveal" id="r4-reveal">
+        2 h = <b>120 min</b>, + 15 min = <b>135 min</b>.
+      </div>
+    </div>
+  </article>
+
+  <!-- ROOM 5 : périmètres -->
+  <article class="room" id="room-5">
+    <div>
+      <div class="room-head">
+        <span class="door-num">05</span>
+        <svg class="room-icon" width="26" height="26" viewBox="0 0 26 26" fill="none"><rect x="3" y="6" width="20" height="14" rx="1.5" stroke="currentColor" stroke-width="1.6"/></svg>
+        <h2>Périmètres</h2>
+      </div>
+      <p class="rule">Le périmètre, c'est la <strong>distance parcourue en faisant le tour</strong> de la figure. Pour un rectangle : 2 × (longueur + largeur).</p>
+      <p class="mnemo">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><path d="M1 14 L5 9 L8 11 L15 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Périmètre = tour du terrain (une clôture). Aire = surface couverte (de la peinture).
+      </p>
+      <button class="placard-btn" id="placard-btn-5" onclick="togglePlacard(5)">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="2" y="9" width="12" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/></svg>
+        Placard — pour aller plus loin
+      </button>
+      <div class="placard-content" id="placard-5">Aire d'un triangle = (base × hauteur) ÷ 2. Aire d'un cercle = π × rayon². Périmètre d'un cercle = 2 × π × rayon. Pas au programme des salles ci-contre, mais utile à avoir en tête.</div>
+    </div>
+    <div class="lab">
+      <svg class="perim-svg" width="220" height="110" viewBox="0 0 220 110">
+        <rect x="30" y="20" width="160" height="66" rx="2"/>
+        <rect id="perim-draw" class="draw" x="30" y="20" width="160" height="66" rx="2"/>
+        <text x="110" y="14" text-anchor="middle">12 cm</text>
+        <text x="205" y="57" text-anchor="middle">5 cm</text>
+      </svg>
+      <p style="margin:0; font-size:.9rem;">Un rectangle mesure <b>12 cm</b> sur <b>5 cm</b>. Quel est son périmètre ?</p>
+      <div class="guess-row">
+        <input type="number" id="r5-input" aria-label="Périmètre en cm" placeholder="?">
+        <button class="go" onclick="check5(event)">Vérifier</button>
+      </div>
+      <div class="verdict" id="r5-verdict"></div>
+      <div class="reveal" id="r5-reveal">
+        2 × (12 + 5) = 2 × 17 = <b><span id="r5-result"></span> cm</b>.
+      </div>
+    </div>
+  </article>
+
+  <section class="revision">
+    <h2>Salle de révision</h2>
+    <p>Reviens uniquement sur les salles où tu t'es trompé·e ou que tu n'as pas encore essayées.</p>
+    <div class="weak-list" id="weak-list"></div>
+  </section>
+
+  <details class="meta">
+    <summary>Comment cette page applique les techniques de mémorisation</summary>
+    <div class="meta-grid">
+      <div class="meta-row"><b>Palais de mémoire</b> Même structure à 5 salles que le module raisonnement : la position compte plus que le contenu pour la mémoire spatiale.</div>
+      <div class="meta-row"><b>Placards</b> Une astuce bonus par salle, cachée jusqu'à ce qu'on l'ouvre volontairement — on retient mieux ce qu'on est allé chercher soi-même.</div>
+      <div class="meta-row"><b>Double codage</b> Chaque règle a un texte et une animation (balance, croix, règle graduée, tracé du périmètre) : deux chemins vers le même souvenir.</div>
+      <div class="meta-row"><b>Effet de génération</b> Toujours deviner avant de voir la réponse.</div>
+      <div class="meta-row"><b>Renforcement</b> Les petites animations (confettis, compteur) marquent une réussite comme un vrai évènement, pas juste une case cochée.</div>
+    </div>
+  </details>
+
+  <footer class="note">Active Learning — module calcul.</footer>
+</div>
+
+<script src="../js/effects.js"></script>
+<script>
+(function(){
+  var STATE_KEY = 'active-learning-calcul-v1';
+  var ROOM_LABELS = {1:'Priorités',2:'% successifs',3:'Règle de 3',4:'Conversions',5:'Périmètres'};
+
+  function loadState(){
+    try{ var raw = localStorage.getItem(STATE_KEY); return raw ? JSON.parse(raw) : {}; }
+    catch(e){ return {}; }
+  }
+  function saveState(state){ try{ localStorage.setItem(STATE_KEY, JSON.stringify(state)); }catch(e){} }
+  var state = loadState();
+
+  function setRoomResult(room, correct){
+    state[room] = correct ? 'mastered' : 'weak';
+    saveState(state);
+    renderDoors();
+    renderWeakList();
+  }
+  function renderDoors(){
+    document.querySelectorAll('.door-dot').forEach(function(dot){
+      var r = dot.getAttribute('data-room'); var st = state[r];
+      if(st === 'mastered'){ dot.setAttribute('data-state','mastered'); }
+      else if(st === 'weak'){ dot.setAttribute('data-state','weak'); }
+      else { dot.removeAttribute('data-state'); }
+    });
+  }
+  function renderWeakList(){
+    var list = document.getElementById('weak-list');
+    list.innerHTML = '';
+    var anyIncomplete = false;
+    [1,2,3,4,5].forEach(function(r){
+      var st = state[r];
+      if(st !== 'mastered'){
+        anyIncomplete = true;
+        var row = document.createElement('div'); row.className = 'weak-item';
+        var label = document.createElement('span');
+        label.textContent = 'Salle ' + r + ' — ' + ROOM_LABELS[r] + (st === 'weak' ? ' (à revoir)' : ' (pas encore essayée)');
+        var btn = document.createElement('button'); btn.textContent = 'Y aller';
+        btn.onclick = (function(rr){ return function(){ goRoom(rr); }; })(r);
+        row.appendChild(label); row.appendChild(btn); list.appendChild(row);
+      }
+    });
+    if(!anyIncomplete){
+      var done = document.createElement('div'); done.className = 'all-done';
+      done.textContent = 'Toutes les salles sont maîtrisées. Reviens dans quelques jours pour vérifier que ça tient.';
+      list.appendChild(done);
+    }
+  }
+  window.goRoom = function(n){
+    var el = document.getElementById('room-' + n);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'start'});
+  };
+  window.togglePlacard = function(n){
+    var content = document.getElementById('placard-' + n);
+    var btn = document.getElementById('placard-btn-' + n);
+    var open = content.classList.toggle('open');
+    btn.classList.toggle('open', open);
+  };
+  function showVerdict(el, ok, msg){
+    el.className = 'verdict show ' + (ok ? 'ok' : 'ko');
+    el.textContent = msg;
+  }
+  function celebrate(btnEvent){
+    if(!btnEvent || !btnEvent.target) return;
+    var rect = btnEvent.target.getBoundingClientRect();
+    AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);
+  }
+
+  // Room 1 : priorités
+  window.check1 = function(ev){
+    var val = parseInt(document.getElementById('r1-input').value, 10);
+    var ok = val === 44;
+    showVerdict(document.getElementById('r1-verdict'), ok, ok ? 'Exact — 44.' : 'Pas tout à fait. Regarde l\'ordre des opérations.');
+    document.getElementById('r1-reveal').classList.add('show');
+    var tokA = document.getElementById('tok-a'), tokB = document.getElementById('tok-b'), tokC = document.getElementById('tok-c');
+    tokA.classList.add('hi'); tokB.classList.add('hi');
+    setTimeout(function(){ tokA.classList.remove('hi'); tokB.classList.remove('hi'); tokC.classList.add('hi'); }, 550);
+    var resultEl = document.getElementById('r1-result');
+    if(ok){ celebrate(ev); AL.countUp(resultEl, 44, 700); } else { resultEl.textContent = '44'; }
+    setRoomResult(1, ok);
+  };
+
+  // Room 2 : pourcentages successifs
+  window.check2 = function(ev){
+    var raw = (document.getElementById('r2-input').value || '').replace(',', '.').replace(/[^0-9.]/g,'');
+    var val = parseFloat(raw);
+    var ok = Math.abs(val - 149.04) < 0.5;
+    showVerdict(document.getElementById('r2-verdict'), ok, ok ? 'Exact — 149,04 €.' : 'Pas tout à fait. Regarde la balance ci-dessus.');
+    document.getElementById('r2-reveal').classList.add('show');
+    document.getElementById('balance-beam').classList.add('tilt');
+    if(ok) celebrate(ev);
+    setRoomResult(2, ok);
+  };
+
+  // Room 3 : règle de trois
+  window.check3 = function(ev){
+    var val = parseInt(document.getElementById('r3-input').value, 10);
+    var ok = val === 15;
+    showVerdict(document.getElementById('r3-verdict'), ok, ok ? 'Exact — 15 dossiers.' : 'Pas tout à fait. Regarde la croix ci-dessus.');
+    document.getElementById('r3-reveal').classList.add('show');
+    document.getElementById('cross-1').classList.add('show');
+    setTimeout(function(){ document.getElementById('cross-2').classList.add('show'); }, 300);
+    if(ok) celebrate(ev);
+    setRoomResult(3, ok);
+  };
+
+  // Room 4 : conversions
+  window.check4 = function(ev){
+    var val = parseInt(document.getElementById('r4-input').value, 10);
+    var ok = val === 135;
+    showVerdict(document.getElementById('r4-verdict'), ok, ok ? 'Exact — 135 min.' : 'Pas tout à fait. Regarde la règle graduée.');
+    document.getElementById('r4-reveal').classList.add('show');
+    var pct = Math.min(135/180*100, 100);
+    document.getElementById('ruler-marker').style.left = pct + '%';
+    var label = document.getElementById('ruler-label');
+    label.style.left = pct + '%';
+    label.textContent = '135 min';
+    if(ok) celebrate(ev);
+    setRoomResult(4, ok);
+  };
+
+  // Room 5 : périmètres
+  window.check5 = function(ev){
+    var val = parseInt(document.getElementById('r5-input').value, 10);
+    var ok = val === 34;
+    showVerdict(document.getElementById('r5-verdict'), ok, ok ? 'Exact — 34 cm.' : 'Pas tout à fait. Regarde le tracé ci-dessus.');
+    document.getElementById('r5-reveal').classList.add('show');
+    document.getElementById('perim-draw').classList.add('show');
+    var resultEl = document.getElementById('r5-result');
+    if(ok){ celebrate(ev); AL.countUp(resultEl, 34, 900); } else { resultEl.textContent = '34'; }
+    setRoomResult(5, ok);
+  };
+
+  renderDoors();
+  renderWeakList();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cas pratique — Active Learning</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="../styles/base.css">
+<style>
+  body{padding-block:0 40px;}
+
+  .room-top{padding-block:22px 14px; border-bottom:1px solid var(--line); display:flex; flex-direction:column; gap:10px;}
+  .eyebrow{font-size:.72rem; letter-spacing:.12em; text-transform:uppercase; color:var(--focus); font-weight:600;}
+  .room-top h1{font-size:1.3rem; font-weight:600;}
+  .room-top p{color:var(--ink-soft); font-size:.9rem; max-width:60ch; line-height:1.55; margin:0;}
+
+  .chrono-row{display:flex; align-items:center; gap:10px; margin-top:4px;}
+  .chrono-btn{
+    display:inline-flex; align-items:center; gap:8px; border:1.5px solid var(--line); background:var(--raised);
+    color:var(--ink-soft); border-radius:999px; padding:7px 14px; font-size:.8rem; font-weight:600; cursor:pointer;
+    font-family:"IBM Plex Sans",sans-serif;
+  }
+  .chrono-btn:hover{border-color:var(--focus); color:var(--focus);}
+  .chrono-badge{
+    font-family:"IBM Plex Mono",monospace; font-weight:700; font-size:.9rem; color:var(--ink);
+    border:1.5px solid var(--line); border-radius:8px; padding:6px 12px; display:none;
+  }
+  .chrono-badge.running{display:inline-block;}
+  .chrono-badge.done{border-color:var(--brick); color:var(--brick);}
+
+  section.block{padding-block:34px 12px;}
+  section.block h2{font-size:1.3rem; margin-bottom:8px;}
+  section.block > p.lead{color:var(--ink-soft); max-width:64ch; line-height:1.55; margin-bottom:24px;}
+
+  /* ---- le dossier ---- */
+  .dossier{display:flex; flex-direction:column; gap:22px;}
+  .doc{
+    position:relative; background:var(--raised); border:1px solid var(--line); border-radius:4px;
+    padding:22px 24px 22px 30px; box-shadow:0 2px 0 var(--line);
+  }
+  .doc:nth-child(odd){transform:rotate(-.3deg);}
+  .doc:nth-child(even){transform:rotate(.3deg);}
+  .doc-clip{
+    position:absolute; top:-10px; left:18px; width:22px; height:34px; color:var(--ink-soft);
+  }
+  .doc-tag{
+    font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; font-weight:700; color:var(--focus);
+    margin-bottom:8px; display:block;
+  }
+  .doc h3{font-family:"IBM Plex Mono",monospace; font-size:.95rem; font-weight:700; color:var(--ink); margin-bottom:10px;}
+  .doc p{font-size:.92rem; line-height:1.65; color:var(--ink); margin:0 0 10px;}
+  .doc p:last-child{margin-bottom:0;}
+  .doc .signature{font-style:italic; color:var(--ink-soft); font-size:.86rem;}
+
+  .freq-table{width:100%; border-collapse:collapse; font-size:.86rem; margin-top:4px;}
+  .freq-table th, .freq-table td{border:1px solid var(--line); padding:7px 10px; text-align:center; font-family:"IBM Plex Mono",monospace;}
+  .freq-table th{background:var(--paper); color:var(--ink-soft); font-weight:600;}
+
+  /* ---- questions ---- */
+  .questions{display:flex; flex-direction:column; gap:20px;}
+  .question{background:var(--raised); border:1px solid var(--line); border-radius:12px; padding:20px;}
+  .question .q-num{font-family:"Fraunces",serif; font-weight:900; color:var(--focus); font-size:1.1rem; margin-right:6px;}
+  .question .q-text{font-size:.96rem; line-height:1.5; margin-bottom:12px;}
+  .question textarea{
+    width:100%; min-height:90px; font-family:"IBM Plex Sans",sans-serif; font-size:.9rem;
+    border:1.5px solid var(--line); border-radius:8px; padding:10px 12px; background:var(--paper); color:var(--ink);
+    resize:vertical;
+  }
+  .question-actions{display:flex; gap:10px; margin-top:10px; flex-wrap:wrap;}
+  .corrige{
+    display:none; margin-top:14px; padding-top:14px; border-top:1px dashed var(--line);
+  }
+  .corrige.show{display:block;}
+  .corrige .label{font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; color:var(--focus); font-weight:700; margin-bottom:6px;}
+  .corrige p{font-size:.88rem; line-height:1.55; color:var(--ink); margin:0 0 10px;}
+  .corrige ul{margin:0 0 12px; padding-left:18px; font-size:.86rem; color:var(--ink-soft); line-height:1.5;}
+  .self-rate{display:flex; gap:8px;}
+  .rate-btn{
+    flex:1; font-size:.8rem; font-weight:600; border-radius:7px; padding:8px 10px; cursor:pointer;
+    border:1.5px solid var(--line); background:var(--raised); color:var(--ink-soft);
+  }
+  .rate-btn.known{border-color:var(--sage); color:var(--sage);}
+  .rate-btn.review{border-color:var(--brick); color:var(--brick);}
+  .question.state-known{border-color:var(--sage);}
+  .question.state-review{border-color:var(--brick);}
+
+  details.meta{background:var(--raised); border:1px solid var(--line); border-radius:14px; padding:18px 22px; margin-block:20px 8px;}
+  details.meta summary{cursor:pointer; font-weight:600; font-size:.92rem; color:var(--ink);}
+  .meta-grid{display:flex; flex-direction:column; gap:10px; margin-top:14px;}
+  .meta-row{display:flex; gap:10px; font-size:.84rem; color:var(--ink-soft); line-height:1.5;}
+  .meta-row b{color:var(--focus); font-family:"IBM Plex Mono",monospace; font-weight:600; flex:none; min-width:16ch;}
+
+  footer.note{color:var(--ink-soft); font-size:.76rem; text-align:center; padding-block:18px 4px;}
+</style>
+</head>
+<body>
+
+<header class="app-nav">
+  <div class="wrap row">
+    <a class="brand" href="../index.html"><span class="dot"></span> Active Learning</a>
+    <a class="crumb" href="../index.html">← Accueil</a>
+  </div>
+</header>
+
+<div class="wrap">
+  <header class="room-top">
+    <div class="eyebrow">Module 05 · Admissibilité</div>
+    <h1>Le Cas Pratique</h1>
+    <p>L'épreuve d'admissibilité ne se devine pas : elle se rédige. Lis le dossier, écris ta propre réponse avant de regarder le corrigé indicatif — c'est en comparant ta version à celle attendue que tu progresses vraiment.</p>
+    <div class="chrono-row">
+      <button class="chrono-btn" id="chrono-toggle" onclick="toggleChrono()">Démarrer le mode chrono (45 min)</button>
+      <span class="chrono-badge" id="chrono-badge">45:00</span>
+    </div>
+  </header>
+
+  <section class="block">
+    <h2>Le dossier</h2>
+    <p class="lead">Centre des finances publiques de Bellevue — réorganisation des horaires d'accueil. Tout ce dont tu as besoin pour répondre se trouve dans ces trois documents, rien de plus.</p>
+    <div class="dossier">
+      <article class="doc">
+        <svg class="doc-clip" viewBox="0 0 22 34" fill="none"><path d="M6 6v18a5 5 0 0 0 10 0V9a3 3 0 0 0-6 0v14a1 1 0 0 0 2 0V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="doc-tag">Document 1 — Note de service</span>
+        <h3>NOTE DE SERVICE N°12-2026</h3>
+        <p><b>Objet :</b> Nouveaux horaires d'accueil du public à compter du 1er octobre 2026.</p>
+        <p>À la suite de la baisse du nombre d'agents affectés à l'accueil (deux départs non remplacés) et du développement des téléservices (plus de 60 % des démarches sont désormais réalisées en ligne), les horaires d'ouverture au public sont modifiés comme suit :</p>
+        <p>— Lundi, mardi, jeudi : 8h30–12h00 et 13h30–16h00<br>— Mercredi : 8h30–12h00 (fermé l'après-midi)<br>— Vendredi : 8h30–12h00 et 13h30–15h00</p>
+        <p>L'accueil téléphonique reste ouvert aux mêmes horaires. Les usagers sont invités à privilégier les téléservices pour les démarches ne nécessitant pas de présence physique.</p>
+        <p class="signature">La direction</p>
+      </article>
+
+      <article class="doc">
+        <svg class="doc-clip" viewBox="0 0 22 34" fill="none"><path d="M6 6v18a5 5 0 0 0 10 0V9a3 3 0 0 0-6 0v14a1 1 0 0 0 2 0V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="doc-tag">Document 2 — Fréquentation</span>
+        <h3>Fréquentation moyenne hebdomadaire — juin 2026</h3>
+        <table class="freq-table">
+          <tr><th>Jour</th><th>Matin</th><th>Après-midi</th></tr>
+          <tr><td>Lundi</td><td>42</td><td>28</td></tr>
+          <tr><td>Mardi</td><td>38</td><td>25</td></tr>
+          <tr><td>Mercredi</td><td>51</td><td>12</td></tr>
+          <tr><td>Jeudi</td><td>35</td><td>22</td></tr>
+          <tr><td>Vendredi</td><td>47</td><td>15</td></tr>
+        </table>
+      </article>
+
+      <article class="doc">
+        <svg class="doc-clip" viewBox="0 0 22 34" fill="none"><path d="M6 6v18a5 5 0 0 0 10 0V9a3 3 0 0 0-6 0v14a1 1 0 0 0 2 0V10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        <span class="doc-tag">Document 3 — Courrier d'un usager</span>
+        <h3>Extrait d'un courrier reçu le 8 octobre 2026</h3>
+        <p>« Madame, Monsieur, je me suis présenté ce mercredi à 15h pour une démarche urgente et j'ai trouvé porte close. Je travaille les autres jours en horaires décalés et ne peux me libérer que le mercredi après-midi. Pouvez-vous m'indiquer comment procéder ? »</p>
+        <p class="signature">M. Lefèvre</p>
+      </article>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2>Les questions</h2>
+    <p class="lead">Écris ta réponse dans le cadre avant d'ouvrir le corrigé — même trois lignes valent mieux que rien : c'est l'effort de formulation qui compte, pas la longueur.</p>
+    <div class="questions" id="questions"></div>
+  </section>
+
+  <details class="meta">
+    <summary>Pourquoi cette page ne fonctionne pas comme les autres modules</summary>
+    <div class="meta-grid">
+      <div class="meta-row"><b>Auto-explication</b> Formuler sa propre réponse avant de lire le corrigé engage une réflexion plus profonde qu'une simple lecture — et révèle précisément ce qu'on croyait savoir sans le savoir vraiment.</div>
+      <div class="meta-row"><b>Comparaison à un modèle</b> Le cas pratique n'a pas de bonne case à cocher : on progresse en comparant sa propre formulation à une réponse experte, pas en cherchant "la" réponse.</div>
+      <div class="meta-row"><b>Conditions réalistes</b> Le mode chrono reproduit la pression de temps réelle de l'épreuve — s'entraîner dans des conditions proches de l'examen améliore le transfert le jour J.</div>
+      <div class="meta-row"><b>Lecture active</b> Toute l'information nécessaire est dans le dossier : l'épreuve teste la rigueur de lecture autant que le raisonnement.</div>
+    </div>
+  </details>
+
+  <footer class="note">Active Learning — module cas pratique.</footer>
+</div>
+
+<script src="../js/effects.js"></script>
+<script>
+(function(){
+  var STATE_KEY = 'active-learning-caspratique-v1';
+  function loadState(){ try{ var raw = localStorage.getItem(STATE_KEY); return raw ? JSON.parse(raw) : {}; }catch(e){ return {}; } }
+  function saveState(s){ try{ localStorage.setItem(STATE_KEY, JSON.stringify(s)); }catch(e){} }
+  var state = loadState();
+
+  var QUESTIONS = [
+    {
+      id:'q1',
+      text:"D'après la note de service, quels sont les horaires d'ouverture le mercredi ?",
+      corrige:"Le mercredi, le centre est ouvert de 8h30 à 12h00 uniquement ; il est fermé l'après-midi.",
+      points:["Horaire du matin exact (8h30–12h00)","Mention explicite de la fermeture l'après-midi"]
+    },
+    {
+      id:'q2',
+      text:"Quelles sont les deux raisons données pour justifier ce changement d'horaires ?",
+      corrige:"Deux départs d'agents non remplacés à l'accueil, et le développement des téléservices (plus de 60 % des démarches réalisées en ligne).",
+      points:["La baisse d'effectifs (deux départs non remplacés)","Le développement des téléservices, avec le chiffre cité"]
+    },
+    {
+      id:'q3',
+      text:"D'après le tableau de fréquentation, quelle demi-journée est la moins fréquentée ? Ce choix de fermeture est-il cohérent avec les données ?",
+      corrige:"Le mercredi après-midi est la demi-journée la moins fréquentée, avec 12 visiteurs. La fermeture de ce créneau est donc cohérente avec les données observées.",
+      points:["Identifier le mercredi après-midi (12 visiteurs)","Relier ce chiffre à la décision de fermeture"]
+    },
+    {
+      id:'q4',
+      text:"Le tableau indique 12 visiteurs le mercredi après-midi avant la fermeture. Cela représente quelle proportion du total hebdomadaire (matin + après-midi, tous les jours) ?",
+      corrige:"Le total hebdomadaire est de 315 visiteurs (213 le matin + 102 l'après-midi). 12 ÷ 315 × 100 ≈ 3,8 %. C'est une part très faible, ce qui confirme que la fermeture affecte peu d'usagers.",
+      points:["Calcul correct du total (315)","Proportion correcte (≈ 3,8 %)","Interprétation du résultat"]
+    },
+    {
+      id:'q5',
+      text:"Rédige une réponse courte et professionnelle au courrier de M. Lefèvre, cohérente avec les nouveaux horaires et les téléservices proposés.",
+      corrige:"Monsieur, nous comprenons la gêne occasionnée. Le mercredi après-midi, notre centre est désormais fermé au public ; nous vous invitons à effectuer votre démarche via notre téléservice en ligne, accessible 7j/7, ou à vous présenter un autre jour ouvré aux horaires habituels. Notre accueil téléphonique reste par ailleurs disponible aux mêmes horaires. Cordialement.",
+      points:["Ton professionnel et courtois","Explication claire du nouvel horaire","Proposition d'une solution concrète (téléservice ou autre jour)"]
+    }
+  ];
+
+  var container = document.getElementById('questions');
+  QUESTIONS.forEach(function(q, i){
+    var el = document.createElement('div');
+    el.className = 'question';
+    el.id = 'question-' + q.id;
+    el.innerHTML =
+      '<div class="q-text"><span class="q-num">' + (i+1) + '</span>' + q.text + '</div>' +
+      '<textarea id="answer-' + q.id + '" aria-label="Ta réponse"></textarea>' +
+      '<div class="question-actions">' +
+        '<button class="chrono-btn" onclick="toggleCorrige(\'' + q.id + '\')">Voir le corrigé indicatif</button>' +
+      '</div>' +
+      '<div class="corrige" id="corrige-' + q.id + '">' +
+        '<div class="label">Corrigé indicatif</div>' +
+        '<p>' + q.corrige + '</p>' +
+        '<div class="label">Points clés attendus</div>' +
+        '<ul>' + q.points.map(function(p){ return '<li>' + p + '</li>'; }).join('') + '</ul>' +
+        '<div class="self-rate">' +
+          '<button class="rate-btn known" onclick="rateQuestion(event,\'' + q.id + '\',true)">Je pense avoir bien répondu</button>' +
+          '<button class="rate-btn review" onclick="rateQuestion(event,\'' + q.id + '\',false)">À retravailler</button>' +
+        '</div>' +
+      '</div>';
+    container.appendChild(el);
+    applyState(q.id);
+  });
+
+  function applyState(id){
+    var el = document.getElementById('question-' + id);
+    el.classList.remove('state-known', 'state-review');
+    if(state[id] === 'known') el.classList.add('state-known');
+    if(state[id] === 'review') el.classList.add('state-review');
+  }
+
+  window.toggleCorrige = function(id){
+    document.getElementById('corrige-' + id).classList.add('show');
+  };
+
+  window.rateQuestion = function(ev, id, known){
+    state[id] = known ? 'known' : 'review';
+    saveState(state);
+    applyState(id);
+    if(window.AL) AL.markActiveDay();
+    if(known && window.AL){
+      var rect = ev.target.getBoundingClientRect();
+      AL.confetti(rect.left + rect.width/2, rect.top + rect.height/2);
+    }
+  };
+
+  // ---- mode chrono (45 minutes, purement indicatif) ----
+  var chronoInterval = null;
+  var chronoSeconds = 45 * 60;
+  window.toggleChrono = function(){
+    var btn = document.getElementById('chrono-toggle');
+    var badge = document.getElementById('chrono-badge');
+    if(chronoInterval){
+      clearInterval(chronoInterval);
+      chronoInterval = null;
+      badge.classList.remove('running');
+      btn.textContent = 'Démarrer le mode chrono (45 min)';
+      return;
+    }
+    chronoSeconds = 45 * 60;
+    badge.classList.add('running');
+    badge.classList.remove('done');
+    btn.textContent = 'Arrêter le chrono';
+    renderChrono();
+    chronoInterval = setInterval(function(){
+      chronoSeconds--;
+      renderChrono();
+      if(chronoSeconds <= 0){
+        clearInterval(chronoInterval);
+        chronoInterval = null;
+        badge.classList.add('done');
+        btn.textContent = 'Démarrer le mode chrono (45 min)';
+      }
+    }, 1000);
+  };
+  function renderChrono(){
+    var m = Math.floor(Math.max(chronoSeconds,0) / 60);
+    var s = Math.max(chronoSeconds,0) % 60;
+    document.getElementById('chrono-badge').textContent = String(m).padStart(2,'0') + ':' + String(s).padStart(2,'0');
+  }
+})();
+</script>
+</body>
+</html>

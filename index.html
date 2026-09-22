@@ -198,7 +198,7 @@
 
   <section>
     <h2>Choisis ton module</h2>
-    <p class="lead">Quatre modules déjà prêts. L'app continue de s'enrichir brique par brique, séance après séance.</p>
+    <p class="lead">Cinq modules déjà prêts. L'app continue de s'enrichir brique par brique, séance après séance.</p>
     <div class="modules">
       <a class="module card ready" href="raisonnement/index.html">
         <span class="m-num">01</span>
@@ -222,6 +222,12 @@
         <span class="m-num">04</span>
         <h3>Vocabulaire &amp; orthographe</h3>
         <p>Mots-clés en image pour le vocabulaire, radar à pièges pour les accords.</p>
+        <span class="status">Prêt →</span>
+      </a>
+      <a class="module card ready" href="cas-pratique/index.html">
+        <span class="m-num">05</span>
+        <h3>Cas pratique</h3>
+        <p>Un vrai dossier à lire, des réponses à rédiger, un corrigé indicatif à comparer.</p>
         <span class="status">Prêt →</span>
       </a>
     </div>
@@ -279,6 +285,11 @@
         key:'active-learning-ortho-v1', name:'Orthographe', href:'vocabulaire/index.html',
         ids:['p1','p2','p3','p4','p5','p6','p7','p8'], okValue:'known', anchor:function(id){ return 'sentence-' + id; },
         labels:{p1:'Accord du participe passé',p2:'Ses / ces',p3:'Quand / quant',p4:'Fermé (adjectif)',p5:'Participe invariable',p6:'A / à',p7:'Bien que + subjonctif',p8:'Pluriel des noms en -al'}
+      },
+      {
+        key:'active-learning-caspratique-v1', name:'Cas pratique', href:'cas-pratique/index.html',
+        ids:['q1','q2','q3','q4','q5'], okValue:'known', anchor:function(id){ return 'question-' + id; },
+        labels:{q1:'Horaires du mercredi',q2:'Raisons du changement',q3:'Demi-journée la moins fréquentée',q4:'Proportion hebdomadaire',q5:"Réponse à l'usager"}
       }
     ];
 
